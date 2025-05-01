@@ -1,59 +1,29 @@
-it('sets max(0) when no matching symbol is found in accountPositions', () => {
-  component.symbol = 'AAPL';
-  component.accountPositions = {
-    accountPositions: [
-      {
-        positions: [{ symbol: 'MSFT', quantity: 50 }]
-      }
-    ]
-  };
+component.accountPositions = {
+  accountPositions: [
+    {
+      positions: [
+        {
+          symbol: 'MSFT',
+          quantity: 50,
+          description: 'Microsoft Corp',
+          type: 'Equity',
+          lastPrice: 300,
+          marketValue: 15000,
+          holdingPct: 0.25
+        }
+      ]
+    }
+  ]
+};
 
-  const quantityControl = component.cards[0].get('quantity');
-  component.cards[0].get('actionToggle')?.setValue('Sell');
-  component.cards[0].get('shareToggle')?.setValue('Shares');
-
-  component.toggleValidate();
-
-  const validator = quantityControl?.validator?.({ value: 100 });
-  expect(validator?.['max']).toBe(0);
+const createMockPosition = (symbol: string, quantity: number | null) => ({
+  symbol,
+  quantity,
+  description: 'Test Description',
+  type: 'Equity',
+  lastPrice: 100,
+  marketValue: 10000,
+  holdingPct: 0.1
 });
 
-it('sets correct max() when matching symbol is found', () => {
-  component.symbol = 'AAPL';
-  component.accountPositions = {
-    accountPositions: [
-      {
-        positions: [{ symbol: 'AAPL', quantity: 204 }]
-      }
-    ]
-  };
-
-  const quantityControl = component.cards[0].get('quantity');
-  component.cards[0].get('actionToggle')?.setValue('Sell');
-  component.cards[0].get('shareToggle')?.setValue('Shares');
-
-  component.toggleValidate();
-
-  const validator = quantityControl?.validator?.({ value: 205 });
-  expect(validator?.['max']).toBeTruthy();
-});
-
-it('sets max(0) when matching symbol has null quantity', () => {
-  component.symbol = 'AAPL';
-  component.accountPositions = {
-    accountPositions: [
-      {
-        positions: [{ symbol: 'AAPL', quantity: null }]
-      }
-    ]
-  };
-
-  const quantityControl = component.cards[0].get('quantity');
-  component.cards[0].get('actionToggle')?.setValue('Sell');
-  component.cards[0].get('shareToggle')?.setValue('Shares');
-
-  component.toggleValidate();
-
-  const validator = quantityControl?.validator?.({ value: 50 });
-  expect(validator?.['max']).toBe(0);
-});
+positions: [createMockPosition('AAPL', 204)]
