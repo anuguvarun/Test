@@ -1,7 +1,9 @@
 if (toggleValue === UnitType.Shares) {
   const accounts = Array.isArray(this.accountOptions) ? this.accountOptions : [];
-  const allPositions = accounts.flatMap(account => account.positions ?? []);
-  const matchedPosition = allPositions.find(pos => pos.symbol === this.symbol);
+
+  const matchedPosition = accounts
+    .map(account => account.positions?.find(p => p.symbol === this.symbol))
+    .find(position => position !== undefined);
 
   if (!matchedPosition || matchedPosition.quantity == null) {
     quantity.setValidators([
