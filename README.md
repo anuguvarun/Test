@@ -1,19 +1,12 @@
-jest.spyOnProperty(component.tradeAgreement, 'valid', 'get').mockReturnValue(true);
-const emitSpy = jest.spyOn(component.orderSubmitted, 'emit');
+it('should initialize steps and set current and enabled when url matches step.url', () => {
+  const mockStep = { url: 'trade-order-entry', current: false, enabled: false };
+  component.steps = [mockStep];
 
-const mockOrder: Trade = {
-  accountNumber: '12345',
-  brokerageAccountNumber: '98765',
-  partyId: 'P001',
-  sourceChannelCode: 'WEB',
-  trades: [],
-};
+  mockRouter.url = '/trade-order-entry';
 
-const createOrderSpy = jest
-  .spyOn(TradeOrderConfirmPresenter.prototype, 'createOrder')
-  .mockReturnValue(mockOrder);
+  component.ngOnInit();
 
-component.isTradeAgreementValid();
-
-expect(createOrderSpy).toHaveBeenCalledWith(component.cardValues, component.accountNumber);
-expect(emitSpy).toHaveBeenCalledWith(mockOrder);
+  expect(component.hideWayfinder).toBe(false); // does not include 'success'
+  expect(component.steps[0].current).toBe(true);
+  expect(component.steps[0].enabled).toBe(true);
+});
