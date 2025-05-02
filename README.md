@@ -1,31 +1,66 @@
-mockSecuritiesFacade = {
-  getSecurities: jest.fn(),
-  getSecurityPrice: jest.fn(),
-  resetSecurities: jest.fn(),
-  resetSubState: jest.fn(),
-};
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { RequestTradeContainer } from './request-trade.container';
 
+describe('RequestTradeContainer', () => {
+  let component: RequestTradeContainer;
+  let fixture: ComponentFixture<RequestTradeContainer>;
 
-it('should call getSecurities on securityFacade when onSearch is called', () => {
-  const mockSecurity = { index: 0, security: {} } as any;
-  container.onSearch(mockSecurity);
-  expect(mockSecuritiesFacade.getSecurities).toHaveBeenCalledWith(mockSecurity);
-});
+  const mockTradeRecommendationFacade = {
+    setAccountName: jest.fn(),
+    setAccountNumber: jest.fn(),
+    setHeaderLinkText: jest.fn(),
+    setHeaderLinkRoute: jest.fn(),
+    setSteps: jest.fn(),
+  };
 
-it('should call getSecurityPrice on securityFacade when onSearchSelect is called', () => {
-  const mockSecurity = { index: 1, security: {} } as any;
-  container.onSearchSelect(mockSecurity);
-  expect(mockSecuritiesFacade.getSecurityPrice).toHaveBeenCalledWith(mockSecurity);
-});
+  const mockTradeFacade = {
+    setPartyId: jest.fn(),
+  };
 
-it('should call resetSecurities on securityFacade when onSelectTradeType is called', () => {
-  const mockSecurity = { index: 2, security: {} } as any;
-  container.onSelectTradeType(mockSecurity);
-  expect(mockSecuritiesFacade.resetSecurities).toHaveBeenCalledWith(mockSecurity);
-});
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      declarations: [RequestTradeContainer],
+      providers: [
+        { provide: 'tradeRecommendationFacade', useValue: mockTradeRecommendationFacade },
+        { provide: 'tradeFacade', useValue: mockTradeFacade },
+      ],
+    });
 
-it('should call resetSubState on securityFacade when onRemoveCard is called', () => {
-  const mockIndex = 3;
-  container.onRemoveCard(mockIndex);
-  expect(mockSecuritiesFacade.resetSubState).toHaveBeenCalledWith(mockIndex);
+    fixture = TestBed.createComponent(RequestTradeContainer);
+    component = fixture.componentInstance;
+    // Inject mock facades manually if not using Angular DI tokens
+    component['tradeRecommendationFacade'] = mockTradeRecommendationFacade;
+    component['tradeFacade'] = mockTradeFacade;
+  });
+
+  it('should set accountName', () => {
+    component.accountName = 'TestAccount';
+    expect(mockTradeRecommendationFacade.setAccountName).toHaveBeenCalledWith('TestAccount');
+  });
+
+  it('should set accountNumber', () => {
+    component.accountNumber = '123456';
+    expect(mockTradeRecommendationFacade.setAccountNumber).toHaveBeenCalledWith('123456');
+  });
+
+  it('should set linkText', () => {
+    component.linkText = 'Go to dashboard';
+    expect(mockTradeRecommendationFacade.setHeaderLinkText).toHaveBeenCalledWith('Go to dashboard');
+  });
+
+  it('should set linkStateName', () => {
+    component.linkStateName = 'dashboard';
+    expect(mockTradeRecommendationFacade.setHeaderLinkRoute).toHaveBeenCalledWith('dashboard');
+  });
+
+  it('should set steps', () => {
+    const steps = [{ title: 'Step 1' }, { title: 'Step 2' }];
+    component.steps = steps;
+    expect(mockTradeRecommendationFacade.setSteps).toHaveBeenCalledWith(steps);
+  });
+
+  it('should set partyId', () => {
+    component.partyId = 42;
+    expect(mockTradeFacade.setPartyId).toHaveBeenCalledWith(42);
+  });
 });
