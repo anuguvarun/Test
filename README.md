@@ -1,66 +1,31 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { RequestTradeContainer } from './request-trade.container';
+it('should call updateValueAndValidity on tradeAgreement', () => {
+  const updateSpy = jest.spyOn(component.tradeAgreement, 'updateValueAndValidity');
+  component.tradeAgreement.valid = false;
 
-describe('RequestTradeContainer', () => {
-  let component: RequestTradeContainer;
-  let fixture: ComponentFixture<RequestTradeContainer>;
+  component.isTradeAgreementValid();
 
-  const mockTradeRecommendationFacade = {
-    setAccountName: jest.fn(),
-    setAccountNumber: jest.fn(),
-    setHeaderLinkText: jest.fn(),
-    setHeaderLinkRoute: jest.fn(),
-    setSteps: jest.fn(),
-  };
+  expect(updateSpy).toHaveBeenCalled();
+});
 
-  const mockTradeFacade = {
-    setPartyId: jest.fn(),
-  };
+it('should emit orderSubmitted if tradeAgreement is valid', () => {
+  component.tradeAgreement.valid = true;
+  const emitSpy = jest.spyOn(component.orderSubmitted, 'emit');
+  const mockOrder = { some: 'order' };
 
-  beforeEach(() => {
-    TestBed.configureTestingModule({
-      declarations: [RequestTradeContainer],
-      providers: [
-        { provide: 'tradeRecommendationFacade', useValue: mockTradeRecommendationFacade },
-        { provide: 'tradeFacade', useValue: mockTradeFacade },
-      ],
-    });
+  const createOrderSpy = jest.spyOn(TradeOrderConfirmPresenter.prototype, 'createOrder')
+    .mockReturnValue(mockOrder);
 
-    fixture = TestBed.createComponent(RequestTradeContainer);
-    component = fixture.componentInstance;
-    // Inject mock facades manually if not using Angular DI tokens
-    component['tradeRecommendationFacade'] = mockTradeRecommendationFacade;
-    component['tradeFacade'] = mockTradeFacade;
-  });
+  component.isTradeAgreementValid();
 
-  it('should set accountName', () => {
-    component.accountName = 'TestAccount';
-    expect(mockTradeRecommendationFacade.setAccountName).toHaveBeenCalledWith('TestAccount');
-  });
+  expect(createOrderSpy).toHaveBeenCalledWith(component.cardValues, component.accountNumber);
+  expect(emitSpy).toHaveBeenCalledWith(mockOrder);
+});
 
-  it('should set accountNumber', () => {
-    component.accountNumber = '123456';
-    expect(mockTradeRecommendationFacade.setAccountNumber).toHaveBeenCalledWith('123456');
-  });
+it('should not emit orderSubmitted if tradeAgreement is not valid', () => {
+  component.tradeAgreement.valid = false;
+  const emitSpy = jest.spyOn(component.orderSubmitted, 'emit');
 
-  it('should set linkText', () => {
-    component.linkText = 'Go to dashboard';
-    expect(mockTradeRecommendationFacade.setHeaderLinkText).toHaveBeenCalledWith('Go to dashboard');
-  });
+  component.isTradeAgreementValid();
 
-  it('should set linkStateName', () => {
-    component.linkStateName = 'dashboard';
-    expect(mockTradeRecommendationFacade.setHeaderLinkRoute).toHaveBeenCalledWith('dashboard');
-  });
-
-  it('should set steps', () => {
-    const steps = [{ title: 'Step 1' }, { title: 'Step 2' }];
-    component.steps = steps;
-    expect(mockTradeRecommendationFacade.setSteps).toHaveBeenCalledWith(steps);
-  });
-
-  it('should set partyId', () => {
-    component.partyId = 42;
-    expect(mockTradeFacade.setPartyId).toHaveBeenCalledWith(42);
-  });
+  expect(emitSpy).not.toHaveBeenCalled();
 });
