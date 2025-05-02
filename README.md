@@ -1,27 +1,23 @@
-describe('shareQuantityValidate', () => {
-  it('sets quantity validator to required when action is Buy', () => {
-    component.cards[0].get('actionToggle')?.setValue('Buy');
-    component.cards[0].get('shareToggle')?.setValue('Shares');
+it('sets required and max validators when matched position symbol is found with quantity', () => {
+  const matchedQuantity = 20;
 
-    const quantityControl = component.cards[0].get('quantity');
-    quantityControl?.setValue(null); // To trigger required
+  component.cards[0].get('shareToggle')?.setValue('Shares');
+  component.cards[0].get('actionToggle')?.setValue('Sell');
 
-    component.toggleValidate();
+  component.accountPositions = {
+    accountPositions: [
+      {
+        brokerageAccountNumber: '758349',
+        positions: [createMockPosition('AAPL', matchedQuantity)],
+      },
+    ],
+  };
 
-    expect(quantityControl?.hasValidator(Validators.required)).toBeTrue();
-  });
+  const quantityControl = component.cards[0].get('quantity');
+  quantityControl?.setValue(15); // under max
 
-  it('marks quantity control as dirty and updates value/validity when action is Buy', () => {
-    component.cards[0].get('actionToggle')?.setValue('Buy');
-    component.cards[0].get('shareToggle')?.setValue('Shares');
+  component.toggleValidate();
 
-    const quantityControl = component.cards[0].get('quantity');
-    spyOn(quantityControl!, 'updateValueAndValidity');
-    spyOn(quantityControl!, 'markAsDirty');
-
-    component.toggleValidate();
-
-    expect(quantityControl!.updateValueAndValidity).toHaveBeenCalled();
-    expect(quantityControl!.markAsDirty).toHaveBeenCalled();
-  });
+  expect(quantityControl?.hasValidator(Validators.required)).toBeTrue();
+  expect(quantityControl?.hasValidator(Validators.max(matchedQuantity))).toBeTrue();
 });
