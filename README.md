@@ -1,39 +1,31 @@
-describe('RequestTradeContainer', () => {
-  // ... existing setup remains untouched
+mockSecuritiesFacade = {
+  getSecurities: jest.fn(),
+  getSecurityPrice: jest.fn(),
+  resetSecurities: jest.fn(),
+  resetSubState: jest.fn(),
+};
 
-  it('should call setAccountName on tradeRecommendationFacade when accountName input is set', () => {
-    const mockValue = 'Mock Account';
-    container.accountName = mockValue;
-    expect(mockTradeRecommendationFacade.setAccountName).toHaveBeenCalledWith(mockValue);
-  });
 
-  it('should call setAccountNumber on tradeRecommendationFacade when accountNumber input is set', () => {
-    const mockValue = 12345;
-    container.accountNumber = mockValue;
-    expect(mockTradeRecommendationFacade.setAccountNumber).toHaveBeenCalledWith(mockValue);
-  });
+it('should call getSecurities on securityFacade when onSearch is called', () => {
+  const mockSecurity = { index: 0, security: {} } as any;
+  container.onSearch(mockSecurity);
+  expect(mockSecuritiesFacade.getSecurities).toHaveBeenCalledWith(mockSecurity);
+});
 
-  it('should call setHeaderLinkText on tradeRecommendationFacade when linkText input is set', () => {
-    const mockValue = 'Link Text';
-    container.linkText = mockValue;
-    expect(mockTradeRecommendationFacade.setHeaderLinkText).toHaveBeenCalledWith(mockValue);
-  });
+it('should call getSecurityPrice on securityFacade when onSearchSelect is called', () => {
+  const mockSecurity = { index: 1, security: {} } as any;
+  container.onSearchSelect(mockSecurity);
+  expect(mockSecuritiesFacade.getSecurityPrice).toHaveBeenCalledWith(mockSecurity);
+});
 
-  it('should call setHeaderLinkRoute on tradeRecommendationFacade when linkStateName input is set', () => {
-    const mockValue = 'route-name';
-    container.linkStateName = mockValue;
-    expect(mockTradeRecommendationFacade.setHeaderLinkRoute).toHaveBeenCalledWith(mockValue);
-  });
+it('should call resetSecurities on securityFacade when onSelectTradeType is called', () => {
+  const mockSecurity = { index: 2, security: {} } as any;
+  container.onSelectTradeType(mockSecurity);
+  expect(mockSecuritiesFacade.resetSecurities).toHaveBeenCalledWith(mockSecurity);
+});
 
-  it('should call setSteps on tradeRecommendationFacade when steps input is set', () => {
-    const mockSteps = [{ title: 'Step 1', index: 0 }];
-    container.steps = mockSteps;
-    expect(mockTradeRecommendationFacade.setSteps).toHaveBeenCalledWith(mockSteps);
-  });
-
-  it('should call setPartyId on tradeFacade when partyId input is set', () => {
-    const mockValue = 789;
-    container.partyId = mockValue;
-    expect(mockTradeFacade.setPartyId).toHaveBeenCalledWith(mockValue);
-  });
+it('should call resetSubState on securityFacade when onRemoveCard is called', () => {
+  const mockIndex = 3;
+  container.onRemoveCard(mockIndex);
+  expect(mockSecuritiesFacade.resetSubState).toHaveBeenCalledWith(mockIndex);
 });
