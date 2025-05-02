@@ -1,21 +1,27 @@
 describe('shareQuantityValidate', () => {
-  it('should apply only Validators.required when action is Buy', () => {
-    const quantityControl = {
-      setValidators: jest.fn(),
-      updateValueAndValidity: jest.fn(),
-      markAsDirty: jest.fn()
-    };
+  it('sets quantity validator to required when action is Buy', () => {
+    component.cards[0].get('actionToggle')?.setValue('Buy');
+    component.cards[0].get('shareToggle')?.setValue('Shares');
 
-    component.card = new FormGroup({
-      actionToggle: new FormControl(ActionType.Buy),
-      quantity: quantityControl as any,
-      shareToggle: new FormControl('irrelevant') // optional
-    });
+    const quantityControl = component.cards[0].get('quantity');
+    quantityControl?.setValue(null); // To trigger required
 
-    component.shareQuantityValidate();
+    component.toggleValidate();
 
-    expect(quantityControl.setValidators).toHaveBeenCalledWith([Validators.required]);
-    expect(quantityControl.updateValueAndValidity).toHaveBeenCalled();
-    expect(quantityControl.markAsDirty).toHaveBeenCalled();
+    expect(quantityControl?.hasValidator(Validators.required)).toBeTrue();
+  });
+
+  it('marks quantity control as dirty and updates value/validity when action is Buy', () => {
+    component.cards[0].get('actionToggle')?.setValue('Buy');
+    component.cards[0].get('shareToggle')?.setValue('Shares');
+
+    const quantityControl = component.cards[0].get('quantity');
+    spyOn(quantityControl!, 'updateValueAndValidity');
+    spyOn(quantityControl!, 'markAsDirty');
+
+    component.toggleValidate();
+
+    expect(quantityControl!.updateValueAndValidity).toHaveBeenCalled();
+    expect(quantityControl!.markAsDirty).toHaveBeenCalled();
   });
 });
