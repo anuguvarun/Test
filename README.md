@@ -1,4 +1,4 @@
-toggleValidate() {
+ toggleValidate() {
   const amount = this.card.get('amount');
   const quantity = this.card.get('quantity');
   const toggleValue = this.card.get('shareToggle')?.value;
@@ -34,4 +34,12 @@ toggleValidate() {
     quantity.setValidators(validators);
     quantity.updateValueAndValidity();
   }
+}
+
+private getMatchedPositionQuantity(): number | null {
+  const accounts = this.accountPositions.accountPositions ?? [];
+  const matched = accounts[0]?.positions?.find(
+    position => position.symbol === this.symbol
+  );
+  return matched?.quantity ?? null;
 }
