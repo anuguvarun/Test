@@ -1,45 +1,21 @@
- toggleValidate() {
-  const amount = this.card.get('amount');
-  const quantity = this.card.get('quantity');
-  const toggleValue = this.card.get('shareToggle')?.value;
-  const actionToggle = this.card.get('actionToggle')?.value;
+it('sets quantity validator when no matching symbol is found in accountPositions', () => {
+  component.cards[0].get('shareToggle')?.setValue('Shares');
+  component.cards[0].get('actionToggle')?.setValue('Sell');
 
-  // Clear existing validators
-  amount.setValidators([]);
-  quantity.setValidators([]);
+  component.symbol = 'TSLA'; // This won't match 'AAPL'
 
-  // Apply basic validators based on unit type
-  switch (toggleValue) {
-    case UnitType.Dollars:
-      amount.setValidators([Validators.required]);
-      break;
+  component.accountPositions = {
+    accountPositions: [
+      {
+        brokerageAccountNumber: '758349',
+        positions: [createMockPosition('AAPL', 204)],
+      },
+    ],
+  };
 
-    case UnitType.Shares:
-    case UnitType.Bonds:
-      quantity.setValidators([Validators.required]);
-      break;
-  }
+  const quantityControl = component.cards[0].get('quantity');
+  quantityControl?.setValue(12);
+  component.toggleValidate();
 
-  // Mark fields dirty and revalidate
-  this.updateFormFieldStatus(['amount', 'quantity'], true);
-
-  // Apply max quantity rule only if selling shares
-  if (actionToggle === ActionType.Sell && toggleValue === UnitType.Shares) {
-    const matchedQuantity = this.getMatchedPositionQuantity();
-
-    const validators = matchedQuantity == null
-      ? [Validators.required, Validators.max(0)]
-      : [Validators.required, Validators.max(matchedQuantity)];
-
-    quantity.setValidators(validators);
-    quantity.updateValueAndValidity();
-  }
-}
-
-private getMatchedPositionQuantity(): number | null {
-  const accounts = this.accountPositions.accountPositions ?? [];
-  const matched = accounts[0]?.positions?.find(
-    position => position.symbol === this.symbol
-  );
-  return matched?.quantity ?? null;
-}
+  expect(quantityControl?.hasValidator(Validators.max(0))).toBe(true);
+});
