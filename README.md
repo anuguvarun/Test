@@ -1,17 +1,19 @@
-it('should initialize steps and set current and enabled when url matches step.url', () => {
-  const mockStep = {
-    title: 'Step 1',
-    url: 'trade-order-entry',
-    current: false,
-    enabled: false,
-  };
-  component.steps = [mockStep];
+if (actiontoggle === ActionType.Sell && toggleValue === UnitType.Shares) {
+  const accounts = this.accountPositions.accountPositions ?? [];
+  const matchedPositionSymbol = accounts[0]?.positions?.find(
+    (position) => position.symbol === this.symbol
+  );
 
-  mockRouter.url = '/trade-order-entry';
+  switch (true) {
+    case matchedPositionSymbol?.quantity == null:
+      quantity.setValidators([Validators.required, Validators.max(0)]);
+      break;
 
-  component.ngOnInit();
-
-  expect(component.hideWayfinder).toBe(false); // no 'success' in URL
-  expect(component.steps[0].current).toBe(true);
-  expect(component.steps[0].enabled).toBe(true);
-});
+    default:
+      quantity.setValidators([
+        Validators.required,
+        Validators.max(matchedPositionSymbol.quantity),
+      ]);
+      break;
+  }
+}
