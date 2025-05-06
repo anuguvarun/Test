@@ -19,3 +19,17 @@ it('should update fields with markAsDirty, markAsUntouched and updateValueAndVal
   expect(spyUntouched).toHaveBeenCalledWith({ onlySelf: true });
   expect(spyUpdate).toHaveBeenCalled();
 });
+
+it('should reset fields when isReset is true', () => {
+  const presenter = new StepCardPresenter();
+
+  const mockForm = new FormGroup({
+    fieldA: new FormControl('some value')
+  });
+
+  const spyReset = jest.spyOn(mockForm.get('fieldA')!, 'reset');
+
+  presenter.updateFormFieldStatus(mockForm, ['fieldA'], true);
+
+  expect(spyReset).toHaveBeenCalled();
+});
