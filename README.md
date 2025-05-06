@@ -14,3 +14,18 @@ else {
 quantity.setValidators([
 Validators. required,
 Validators.max(matchedPositionSymbol.quantity),
+
+ngOnInit(): void {
+this.subscription.add(
+this card-get('actionToggle') .valueChanges.subscribe(() => {
+this. updateTradeCount ();
+})
+) ;
+this subscription.add (
+this. card.get ('shareToggle'). valueChanges-subscribe(() => {
+this.toggleClearValidate();
+})
+｝
+ngOnDestroy(): void
+{
+this-subscription.unsubscribe();
