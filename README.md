@@ -1,20 +1,14 @@
-private destroy$ = new Subject<void>();
+import { FormGroup, FormControl } from '@angular/forms';
 
-ngOnInit(): void {
-  this.card.get('actionToggle')?.valueChanges
-    .pipe(takeUntil(this.destroy$))
-    .subscribe(() => {
-      this.updateTradeCount();
-    });
+const mockForm = new FormGroup({
+  actionToggle: new FormControl(),
+  shareToggle: new FormControl(),
+  amount: new FormControl(),
+  quantity: new FormControl()
+});
 
-  this.card.get('shareToggle')?.valueChanges
-    .pipe(takeUntil(this.destroy$))
-    .subscribe(() => {
-      this.toggleClearValidate();
-    });
-}
-
-ngOnDestroy(): void {
-  this.destroy$.next();
-  this.destroy$.complete();
-}
+component.presenter.updateFormFieldStatus(
+  mockForm,
+  ['actionToggle', 'shareToggle', 'amount', 'quantity'],
+  false
+);
