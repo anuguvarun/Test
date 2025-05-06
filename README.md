@@ -1,11 +1,20 @@
-private _accountPositions: any;
-@Input()
-set accountPositions(value: any) {
-  this._accountPositions = value;
+private destroy$ = new Subject<void>();
 
-  const positions = value?.accountPositions?.[0]?.positions;
-  if (positions) {
-    const safe = positions.map(p => ({ symbol: p.symbol, quantity: p.quantity }));
-    console.log('Safe preview:', safe);
-  }
+ngOnInit(): void {
+  this.card.get('actionToggle')?.valueChanges
+    .pipe(takeUntil(this.destroy$))
+    .subscribe(() => {
+      this.updateTradeCount();
+    });
+
+  this.card.get('shareToggle')?.valueChanges
+    .pipe(takeUntil(this.destroy$))
+    .subscribe(() => {
+      this.toggleClearValidate();
+    });
+}
+
+ngOnDestroy(): void {
+  this.destroy$.next();
+  this.destroy$.complete();
 }
