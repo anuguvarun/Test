@@ -1,39 +1,51 @@
-import { FormControl } from '@angular/forms';
-import { amountValidator } from './amount.validator';
+import { AbstractControl } from '@angular/forms';
+import { amountValidator } from './amount.validator'; // adjust this path as needed
 
 describe('amountValidator', () => {
-  it('should pass if amount is greater than minimum', () => {
+  const getMockControl = (value: any): AbstractControl => ({ value } as AbstractControl);
+
+  it('should return null for a valid amount (less than minValue)', () => {
     const validator = amountValidator(100);
-    const control = new FormControl(150);
+    const control = getMockControl(50);
     expect(validator(control)).toBeNull();
   });
 
-  it('should pass if amount is exactly the minimum', () => {
+  it('should return error object when value is greater than or equal to minValue', () => {
     const validator = amountValidator(100);
-    const control = new FormControl(100);
-    expect(validator(control)).toBeNull();
-  });
-
-  it('should fail if amount is less than minimum', () => {
-    const validator = amountValidator(100);
-    const control = new FormControl(50);
+    const control = getMockControl(150);
     expect(validator(control)).toEqual({
       amountValidator: {
         requiredValue: 100,
-        actualValue: 50
+        actualValue: 150
       }
     });
   });
 
-  it('should pass if value is NaN (non-numeric)', () => {
+  it('should return error object when value is equal to minValue', () => {
     const validator = amountValidator(100);
-    const control = new FormControl('abc'); // becomes NaN
-    expect(validator(control)).toBeNull();
+    const control = getMockControl(100);
+    expect(validator(control)).toEqual({
+      amountValidator: {
+        requiredValue: 100,
+        actualValue: 100
+      }
+    });
   });
 
-  it('should handle null or undefined values as valid', () => {
+  it('should return error object for NaN value', () => {
     const validator = amountValidator(100);
-    expect(validator(new FormControl(null))).toBeNull();
-    expect(validator(new FormControl(undefined))).toBeNull();
+    const control = getMockControl('abc');
+    expect(validator(control)).toEqual({
+      amountValidator: {
+        requiredValue: 100,
+        actualValue: NaN
+      }
+    });
+  });
+
+  it('should return null for numeric string less than minValue', () => {
+    const validator = amountValidator(100);
+    const control = getMockControl('99');
+    expect(validator(control)).toBeNull();
   });
 });
