@@ -1,88 +1,41 @@
-import { FormGroup, FormControl, Validators } from '@angular/forms';
-import { StepCardPresenter } from './step-card.presenter';
-import { AccountPositionsResponseInfo } from 'your-model-path';
-import { UnitType, ActionType } from 'your-enums';
-import { amountValidator } from 'your-validator-util';
+function getFormValues(card: FormGroup) {
+  return {
+    quantity: card.get('quantity'),
+    amount: card.get('amount'),
+    shareToggle: card.get('shareToggle')?.value,
+    actionToggle: card.get('actionToggle')?.value
+  };
+}
 
-describe('StepCardPresenter', () => {
-  let presenter: StepCardPresenter;
-  let form: FormGroup;
+function getMatchedPosition(accountPositions: AccountPositionsResponseInfo, symbol: string) {
+  const accounts = accountPositions.accountPositions ?? [];
+  return accounts[0]?.positions?.find((position) => position.symbol === symbol);
+}
 
-  beforeEach(() => {
-    presenter = new StepCardPresenter();
-    form = new FormGroup({
-      amount: new FormControl(''),
-      shareToggle: new FormControl(UnitType.Dollars),
-      actionToggle: new FormControl(ActionType.Sell)
-    });
-  });
+function sellShareValidate(card: FormGroup, symbol: string, accountPositions: AccountPositionsResponseInfo): void {
+  const { quantity, shareToggle, actionToggle } = getFormValues(card);
+  
+  if (actionToggle === ActionType.Sell && shareToggle === UnitType.Shares) {
+    const matchedPosition = getMatchedPosition(accountPositions, symbol);
+    
+    quantity.setValidators([
+      Validators.required,
+      matchedPosition?.quantity == null ? Validators.max(0) : Validators.max(matchedPosition.quantity),
+    ]);
+  }
+}
 
-  it('should apply validator with 90% of market value if matched position is found', () => {
-    const mockAccountPositions: AccountPositionsResponseInfo = {
-      accountPositions: [
-        {
-          brokerageAccountNumber: '123456',
-          positions: [
-            {
-              symbol: 'AAPL',
-              marketValue: 1000,
-              description: '',
-              type: '',
-              quantity: 0,
-              lastPrice: 0,
-              holdingPct: 0
-            }
-          ]
-        }
-      ]
-    };
+function sellAmountValidate(card: FormGroup, symbol: string, accountPositions: AccountPositionsResponseInfo): void {
+  const { amount, shareToggle, actionToggle } = getFormValues(card);
 
-    presenter.sellAmountValidate(form, 'AAPL', mockAccountPositions);
+  if (actionToggle === ActionType.Sell && shareToggle === UnitType.Dollars) {
+    const matchedPosition = getMatchedPosition(accountPositions, symbol);
 
-    const amountControl = form.get('amount');
-    expect(amountControl?.validator).toBeDefined();
-
-    const validatorFn = amountControl?.validator!;
-    const result = validatorFn({ value: 999 } as any);
-    expect(result).toBeNull(); // Means validation passed
-  });
-
-  it('should apply validator with 0 if market value is null', () => {
-    const mockAccountPositions: AccountPositionsResponseInfo = {
-      accountPositions: [
-        {
-          brokerageAccountNumber: '123456',
-          positions: [
-            {
-              symbol: 'AAPL',
-              marketValue: null as any,
-              description: '',
-              type: '',
-              quantity: 0,
-              lastPrice: 0,
-              holdingPct: 0
-            }
-          ]
-        }
-      ]
-    };
-
-    presenter.sellAmountValidate(form, 'AAPL', mockAccountPositions);
-
-    const amountControl = form.get('amount');
-    expect(amountControl?.validator).toBeDefined();
-  });
-
-  it('should not apply validators if shareToggle is not UnitType.Dollars', () => {
-    form.get('shareToggle')?.setValue(UnitType.Shares);
-
-    const mockAccountPositions: AccountPositionsResponseInfo = {
-      accountPositions: []
-    };
-
-    presenter.sellAmountValidate(form, 'AAPL', mockAccountPositions);
-
-    const amountControl = form.get('amount');
-    expect(amountControl?.validator).toBeNull(); // no validators applied
-  });
-});
+    amount.setValidators([
+      Validators.required,
+      matchedPosition?.marketValue == null
+        ? amountValidator(0)
+        : amountValidator(matchedPosition.marketValue * 0.9),
+    ]);
+  }
+}
