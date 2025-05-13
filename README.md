@@ -1,27 +1,84 @@
-calculateEstimatedValue(amount: number, price: number | null, unitType: UnitType): number | null {
-  if (!amount) return null;
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { sellAmountValidate } from './your-presenter-file'; // Adjust the import path
+import { ActionType, UnitType } from './your-enum-file'; // Adjust this import
+import { amountValidator } from './your-validator-file'; // Adjust this import
 
-  switch (true) {
-    case unitType === UnitType.Bonds:
-      return amount * 1000.0;
-    case unitType === UnitType.Shares && !!price:
-      return amount * price;
-    case unitType === UnitType.Dollars:
-      return amount;
-    default:
-      return null;
-  }
-}
+describe('sellAmountValidate', () => {
+  let fb: FormBuilder;
+  let form: FormGroup;
 
-updateEstimatedValue(value = 0): void {
-  const name = this.unitType === UnitType.Dollars ? 'amount' : 'quantity';
-  const rawValue = this.card.get(name)?.value;
-  const amount = this.presenter.getNumber(rawValue);
+  beforeEach(() => {
+    fb = new FormBuilder();
+    form = fb.group({
+      amount: [''],
+      shareToggle: [''],
+      actionToggle: [''],
+    });
+  });
 
-  const price = this.securityPriceData?.price;
-  const unitType = this.unitType;
-  const estimate = this.card.get('estimatedValue');
+  it('should set required and validator with 0 if marketValue is null', () => {
+    form.get('shareToggle')?.setValue(UnitType.Dollars);
+    form.get('actionToggle')?.setValue(ActionType.Sell);
 
-  const result = this.presenter.calculateEstimatedValue(amount, price, unitType);
-  estimate.setValue(result);
-}
+    const accountPositions = {
+      accountPositions: [
+        {
+          positions: [
+            {
+              symbol: 'AAPL',
+              marketValue: null,
+            },
+          ],
+        },
+      ],
+    };
+
+    sellAmountValidate(form, 'AAPL', accountPositions);
+
+    const amountControl = form.get('amount');
+    expect(amountControl?.validator).toBeTruthy();
+    const errors = amountControl?.validator?.({ value: 100 });
+    // Replace with actual logic from `amountValidator`
+    expect(errors).toEqual(amountValidator(0)({ value: 100 }));
+  });
+
+  it('should apply validator with 90% of market value when valid', () => {
+    form.get('shareToggle')?.setValue(UnitType.Dollars);
+    form.get('actionToggle')?.setValue(ActionType.Sell);
+
+    const accountPositions = {
+      accountPositions: [
+        {
+          positions: [
+            {
+              symbol: 'AAPL',
+              marketValue: 1000,
+            },
+          ],
+        },
+      ],
+    };
+
+    sellAmountValidate(form, 'AAPL', accountPositions);
+
+    const amountControl = form.get('amount');
+    const validatorFn = amountValidator(900); // 90% of 1000
+    expect(amountControl?.validator).toBeTruthy();
+    const errors = amountControl?.validator?.({ value: 1000 });
+    expect(errors).toEqual(validatorFn({ value: 1000 }));
+  });
+
+  it('should not apply validator if actionToggle is not Sell or shareToggle is not Dollars', () => {
+    form.get('shareToggle')?.setValue(UnitType.Shares);
+    form.get('actionToggle')?.setValue(ActionType.Buy);
+
+    const accountPositions = {
+      accountPositions: [],
+    };
+
+    sellAmountValidate(form, 'AAPL', accountPositions);
+
+    const amountControl = form.get('amount');
+    expect(amountControl?.validator).toBeNull();
+  });
+});
