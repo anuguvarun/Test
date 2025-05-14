@@ -1,29 +1,82 @@
-private sellValidate(
-  card: FormGroup,
-  symbol: string,
-  accountPositions: AccountPositionsResponseInfo,
-  unitType: UnitType,
-  field: 'quantity' | 'amount',
-  valueKey: 'quantity' | 'marketValue',
-  validatorFn: (value: number) => any
-): void {
-  const formValues = this.getFormValues(card);
-  const matchedPosition = this.getMatchedPosition(accountPositions, symbol);
+import { getMatchedPosition } from './your-file';
 
-  if (formValues.actionToggle === ActionType.Sell && formValues.shareToggle === unitType) {
-    const value = matchedPosition?.[valueKey];
-    const control = card.get(field);
-    control?.setValidators([
-      Validators.required,
-      value == null ? validatorFn(0) : validatorFn(valueKey === 'marketValue' ? value * 0.9 : value),
-    ]);
-  }
-}
+const mockAccountPositions = {
+  accountPositions: [
+    { symbol: 'AAPL', positions: [{ symbol: 'AAPL', value: 100 }] },
+    { symbol: 'GOOG', positions: [{ symbol: 'GOOG', value: 150 }] }
+  ]
+};
 
-sellShareValidate(card: FormGroup, symbol: string, accountPositions: AccountPositionsResponseInfo): void {
-  this.sellValidate(card, symbol, accountPositions, UnitType.Shares, 'quantity', 'quantity', Validators.max);
-}
+describe('getMatchedPosition', () => {
+  it('should return the correct position for the given symbol', () => {
+    const result = getMatchedPosition(mockAccountPositions, 'AAPL');
+    expect(result).toEqual({ symbol: 'AAPL', value: 100 });
+  });
 
-sellAmountValidate(card: FormGroup, symbol: string, accountPositions: AccountPositionsResponseInfo): void {
-  this.sellValidate(card, symbol, accountPositions, UnitType.Dollars, 'amount', 'marketValue', amountValidator);
-}
+  it('should return undefined if the symbol is not found', () => {
+    const result = getMatchedPosition(mockAccountPositions, 'TSLA');
+    expect(result).toBeUndefined();
+  });
+
+  it('should handle undefined accountPositions gracefully', () => {
+    const result = getMatchedPosition(undefined, 'AAPL');
+    expect(result).toBeUndefined();
+  });
+});
+
+import { FormGroup, FormControl, Validators } from '@angular/forms';
+import { sellValidate } from './your-file';
+
+describe('sellValidate', () => {
+  it('should set required and custom validators on the form control', () => {
+    const form = new FormGroup({
+      shareToggle: new FormControl('Shares'),
+      actionToggle: new FormControl('Sell'),
+      quantity: new FormControl('')
+    });
+
+    const mockValidatorFn = jest.fn(value => value > 0);
+
+    sellValidate(
+      form,
+      'AAPL',
+      {
+        accountPositions: [
+          { symbol: 'AAPL', positions: [{ symbol: 'AAPL', value: 100 }] }
+        ]
+      },
+      'Sell',
+      'Shares',
+      'quantity',
+      'quantity',
+      mockValidatorFn
+    );
+
+    form.get('quantity')?.setValue(10);
+    expect(mockValidatorFn).toHaveBeenCalledWith(10);
+  });
+});
+
+import { FormGroup, FormControl, Validators } from '@angular/forms';
+import { sellShareValidate } from './your-file';
+
+describe('sellShareValidate', () => {
+  it('should call sellValidate and apply Validators.max on the form control', () => {
+    const form = new FormGroup({
+      shareToggle: new FormControl('Shares'),
+      actionToggle: new FormControl('Sell'),
+      quantity: new FormControl('')
+    });
+
+    const mockPositions = {
+      accountPositions: [
+        { symbol: 'AAPL', positions: [{ symbol: 'AAPL', value: 100 }] }
+      ]
+    };
+
+    sellShareValidate(form, 'AAPL', mockPositions);
+
+    expect(form.get('quantity')?.validator).toBeTruthy();
+  });
+});
+
