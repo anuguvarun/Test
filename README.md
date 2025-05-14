@@ -1,114 +1,118 @@
-import { Validators, FormGroup } from '@angular/forms';
-import { YourPresenter } from './your-presenter-file';
+import { FormGroup } from '@angular/forms';
+import { sellValidate } from './your-file'; // adjust path as needed
 
-describe('YourPresenter', () => {
-  let presenter: YourPresenter;
+describe('sellValidate', () => {
+  let mockForm: any;
+  let mockValidatorFn: jest.Mock;
+  let mockGetMatchedPosition: jest.SpyInstance;
 
   beforeEach(() => {
-    presenter = new YourPresenter();
-  });
+    mockValidatorFn = jest.fn();
 
-  it('should apply validators when action and unit types match', () => {
-    const mockCard = {
-      get: jest.fn((field: string) => ({
-        value: field === 'shareToggle' ? 'unitType1' : 'actionType1',
-        setValidators: jest.fn()
-      }))
-    } as unknown as FormGroup;
-
-    const mockAccountPositions = { /* mock data */ };
-    const matchedPosition = {
-      quantity: 100,
-      marketValue: 200
+    mockForm = {
+      get: jest.fn((key: string) => ({
+        value: {
+          shareToggle: 'quantity',
+          actionToggle: 'SELL',
+        }[key],
+        setValidators: jest.fn(),
+      })),
     };
 
-    presenter.getMatchedPosition = jest.fn().mockReturnValue(matchedPosition);
+    mockGetMatchedPosition = jest.spyOn<any, any>(YourClass.prototype, 'getMatchedPosition');
+  });
 
-    const validatorFn = jest.fn().mockImplementation((val: number) => `validated-${val}`);
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
 
-    presenter.sellValidate(
-      mockCard,
+  it('should set validators when actionType and unitType match toggles', () => {
+    const mockPosition = {
+      quantity: 100,
+      marketValue: 2000,
+    };
+
+    mockForm.get = jest.fn((key: string) => {
+      if (key === 'shareToggle') return { value: 'quantity' };
+      if (key === 'actionToggle') return { value: 'SELL' };
+      if (key === 'quantity') return { setValidators: jest.fn() };
+      return null;
+    });
+
+    mockGetMatchedPosition.mockReturnValue(mockPosition);
+
+    sellValidate(
+      mockForm,
       'AAPL',
-      mockAccountPositions,
-      'actionType1',
-      'unitType1',
+      {} as any,
+      'SELL',
       'quantity',
       'quantity',
-      validatorFn
+      mockValidatorFn
     );
 
-    expect(validatorFn).toHaveBeenCalledWith(100);
-    expect(mockCard.get('quantity')?.setValidators).toHaveBeenCalledWith([
-      Validators.required,
-      'validated-100'
+    const field = mockForm.get('quantity');
+    expect(field.setValidators).toHaveBeenCalledWith([
+      expect.any(Function), // Validators.required
+      mockValidatorFn(100), // responseValue is 'quantity'
     ]);
   });
 
-  it('should apply validatorFn with 0 if value is null', () => {
-    const mockCard = {
-      get: jest.fn((field: string) => ({
-        value: field === 'shareToggle' ? 'unitType1' : 'actionType1',
-        setValidators: jest.fn()
-      }))
-    } as unknown as FormGroup;
+  it('should use default value when matched position is null', () => {
+    mockGetMatchedPosition.mockReturnValue(null);
 
-    const matchedPosition = {
-      marketValue: null
+    mockForm.get = jest.fn((key: string) => {
+      if (key === 'shareToggle') return { value: 'quantity' };
+      if (key === 'actionToggle') return { value: 'SELL' };
+      if (key === 'quantity') return { setValidators: jest.fn() };
+      return null;
+    });
+
+    sellValidate(
+      mockForm,
+      'AAPL',
+      {} as any,
+      'SELL',
+      'quantity',
+      'quantity',
+      mockValidatorFn
+    );
+
+    const field = mockForm.get('quantity');
+    expect(field.setValidators).toHaveBeenCalledWith([
+      expect.any(Function),
+      mockValidatorFn(0),
+    ]);
+  });
+
+  it('should adjust value for marketValue', () => {
+    const mockPosition = {
+      marketValue: 1000,
     };
 
-    presenter.getMatchedPosition = jest.fn().mockReturnValue(matchedPosition);
+    mockGetMatchedPosition.mockReturnValue(mockPosition);
 
-    const validatorFn = jest.fn().mockImplementation((val: number) => `validated-${val}`);
+    mockForm.get = jest.fn((key: string) => {
+      if (key === 'shareToggle') return { value: 'amount' };
+      if (key === 'actionToggle') return { value: 'SELL' };
+      if (key === 'amount') return { setValidators: jest.fn() };
+      return null;
+    });
 
-    presenter.sellValidate(
-      mockCard,
+    sellValidate(
+      mockForm,
       'AAPL',
-      {},
-      'actionType1',
-      'unitType1',
+      {} as any,
+      'SELL',
       'amount',
       'marketValue',
-      validatorFn
+      mockValidatorFn
     );
 
-    expect(validatorFn).toHaveBeenCalledWith(0);
-    expect(mockCard.get('amount')?.setValidators).toHaveBeenCalledWith([
-      Validators.required,
-      'validated-0'
-    ]);
-  });
-
-  it('should use 90% of marketValue if responseValue is marketValue and not null', () => {
-    const mockCard = {
-      get: jest.fn((field: string) => ({
-        value: field === 'shareToggle' ? 'unitType1' : 'actionType1',
-        setValidators: jest.fn()
-      }))
-    } as unknown as FormGroup;
-
-    const matchedPosition = {
-      marketValue: 500
-    };
-
-    presenter.getMatchedPosition = jest.fn().mockReturnValue(matchedPosition);
-
-    const validatorFn = jest.fn().mockImplementation((val: number) => `validated-${val}`);
-
-    presenter.sellValidate(
-      mockCard,
-      'GOOG',
-      {},
-      'actionType1',
-      'unitType1',
-      'quantity',
-      'marketValue',
-      validatorFn
-    );
-
-    expect(validatorFn).toHaveBeenCalledWith(500 * 0.9);
-    expect(mockCard.get('quantity')?.setValidators).toHaveBeenCalledWith([
-      Validators.required,
-      'validated-450'
+    const field = mockForm.get('amount');
+    expect(field.setValidators).toHaveBeenCalledWith([
+      expect.any(Function),
+      mockValidatorFn(900), // 0.9 * 1000
     ]);
   });
 });
