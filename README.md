@@ -1,42 +1,32 @@
-describe('getMatchedPosition', () => {
-  let presenter: any;
+import { FormGroup, FormControl, Validators } from '@angular/forms';
+import { sellValidate } from './your-file';
 
-  beforeEach(() => {
-    presenter = new YourClass(); // Replace with your actual class
-  });
+describe('sellValidate', () => {
+  it('should set required and custom validators on the form control', () => {
+    const form = new FormGroup({
+      shareToggle: new FormControl('Shares'),
+      actionToggle: new FormControl('Sell'),
+      quantity: new FormControl('')
+    });
 
-  it('should return the correct position for the given symbol', () => {
-    const mockPositions = {
-      accountPositions: [
-        {
-          symbol: 'AAPL',
-          positions: [{ symbol: 'AAPL', value: 100 }],
-          brokerageAccountNumber: '123456'
-        }
-      ]
-    };
+    const mockValidatorFn = jest.fn(value => value > 0);
 
-    const result = presenter.getMatchedPosition(mockPositions, 'AAPL');
-    expect(result).toEqual({ symbol: 'AAPL', value: 100 });
-  });
+    sellValidate(
+      form,
+      'AAPL',
+      {
+        accountPositions: [
+          { symbol: 'AAPL', positions: [{ symbol: 'AAPL', value: 100 }] }
+        ]
+      },
+      'Sell',
+      'Shares',
+      'quantity',
+      'quantity',
+      mockValidatorFn
+    );
 
-  it('should return undefined if the symbol is not found', () => {
-    const mockPositions = {
-      accountPositions: [
-        {
-          symbol: 'AAPL',
-          positions: [{ symbol: 'AAPL', value: 100 }],
-          brokerageAccountNumber: '123456'
-        }
-      ]
-    };
-
-    const result = presenter.getMatchedPosition(mockPositions, 'TSLA');
-    expect(result).toBeUndefined();
-  });
-
-  it('should handle undefined accountPositions gracefully', () => {
-    const result = presenter.getMatchedPosition(undefined, 'AAPL');
-    expect(result).toBeUndefined();
+    form.get('quantity')?.setValue(10);
+    expect(mockValidatorFn).toHaveBeenCalledWith(10);
   });
 });
