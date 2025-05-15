@@ -1,42 +1,41 @@
-interface SellValidationConfig {
-  card: FormGroup;
-  symbol: string;
-  accountPositions: AccountPositionsResponseInfo;
-  actionType: ActionType;
-  unitType: UnitType;
-  inputField: 'quantity' | 'amount';
-  responseValue: 'quantity' | 'marketValue';
-  validatorFn: (value: number) => any;
-}
-
-sellValidate(config: SellValidationConfig): void {
-  const {
-    card,
-    symbol,
-    accountPositions,
-    actionType,
-    unitType,
-    inputField,
-    responseValue,
-    validatorFn
-  } = config;
-
+sellValidate(config: SellContext): void {
+  const { card, symbol, accountPositions } = config;
   const shareToggle = card.get('shareToggle')?.value;
   const actionToggle = card.get('actionToggle')?.value;
+
   const matchedPosition = this.getMatchedPosition(accountPositions, symbol);
 
-  if (actionToggle === actionType && shareToggle === unitType) {
-    const value = matchedPosition?.[responseValue];
-    const field = card.get(inputField);
+  if (actionToggle !== ActionType.Sell || !matchedPosition) return;
 
-    let computedValue = 0;
-    if (value != null) {
-      computedValue = responseValue === 'marketValue' ? value * 0.9 : value;
+  const validations = [
+    {
+      unitType: UnitType.Dollars,
+      inputField: 'amount',
+      responseValue: 'marketValue',
+      validatorFn: amountValidator
+    },
+    {
+      unitType: UnitType.Shares,
+      inputField: 'quantity',
+      responseValue: 'quantity',
+      validatorFn: Validators.max
     }
+  ];
 
-    field?.setValidators([
-      Validators.required,
-      validatorFn(computedValue),
-    ]);
+  for (const v of validations) {
+    if (shareToggle === v.unitType) {
+      const value = matchedPosition[v.responseValue];
+      const field = card.get(v.inputField);
+
+      let maxAllowedValue = 0;
+      if (value != null) {
+        maxAllowedValue = v.responseValue === 'marketValue' ? value * 0.9 : value;
+      }
+
+      field?.setValidators([
+        Validators.required,
+        v.validatorFn(maxAllowedValue)
+      ]);
+    }
   }
 }
