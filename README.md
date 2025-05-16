@@ -57,3 +57,19 @@ describe('sellValidate', () => {
     expect(form.get('quantity')?.validator).toBeNull();
   });
 });
+
+
+it('should apply validator with quantity when UnitType is Shares', () => {
+  form.get('shareToggle')?.setValue(UnitType.Shares);
+
+  presenter.sellValidate(form, 'AAPL', mockAccountPositions);
+
+  const quantityControl = form.get('quantity');
+  expect(quantityControl?.validator).toBeDefined();
+
+  quantityControl?.setValue(51); // Attempt to set a value above max (which is 50)
+  expect(quantityControl?.errors).toBeTruthy(); // Should have validation errors
+
+  quantityControl?.setValue(49); // Within limit
+  expect(quantityControl?.errors).toBeNull(); // Should be valid
+});
