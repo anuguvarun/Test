@@ -91,3 +91,32 @@ const nullPosition = {
   ]
 };
 
+
+it('should apply validator with 0 if value is null', () => {
+  const nullPosition = {
+    accountPositions: [
+      {
+        brokerageAccountNumber: '12345678',
+        positions: [
+          {
+            symbol: 'AAPL',
+            marketValue: null,
+            quantity: null,
+            description: '',
+            type: '',
+            lastPrice: null,
+            holdingPct: null
+          }
+        ]
+      }
+    ]
+  };
+
+  presenter.sellValidate(form, 'AAPL', nullPosition);
+  const amountControl = form.get('amount');
+  expect(amountControl?.validator).toBeDefined();
+
+  amountControl?.setValue(1); // Exceeds 0, should trigger error
+  expect(amountControl?.errors).toBeTruthy();
+});
+
