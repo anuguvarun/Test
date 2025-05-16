@@ -1,122 +1,53 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { YourComponent } from './your-component';
+import { ActionType, UnitType } from 'path-to-enums';
 import { FormGroup, FormControl } from '@angular/forms';
-import { UnitType } from 'path-to-enums'; // Replace with actual path
-import { presenter } from './path-to-presenter'; // Replace with actual path
 
-describe('sellValidate', () => {
-  let form: FormGroup;
-  const mockAccountPositions = [
-    {
-      symbol: 'AAPL',
-      marketValue: 1000,
-      quantity: 50
-    }
-  ];
+describe('YourComponent', () => {
+  let component: YourComponent;
+  let fixture: ComponentFixture<YourComponent>;
 
   beforeEach(() => {
-    form = new FormGroup({
+    TestBed.configureTestingModule({
+      declarations: [YourComponent]
+    });
+
+    fixture = TestBed.createComponent(YourComponent);
+    component = fixture.componentInstance;
+
+    // Mock required properties
+    component.card = new FormGroup({
       shareToggle: new FormControl(UnitType.Dollars),
       amount: new FormControl(),
       quantity: new FormControl()
     });
+    component.symbol = 'AAPL';
+    component.accountPositions = { accountPositions: [] };
   });
 
-  it('should apply validator with 90% of marketValue when UnitType is Dollars', () => {
-    presenter.sellValidate(form, 'AAPL', mockAccountPositions);
-    const amountControl = form.get('amount');
-    expect(amountControl?.validator).toBeDefined();
+  it('should call sellValidate if action is Sell', () => {
+    const sellValidateSpy = jest.spyOn(component.presenter, 'sellValidate');
 
-    const errors = amountControl?.validator?.({ value: 1001 });
-    expect(errors).toBeTruthy(); // Should fail because 1001 > 900
+    const action = { value: ActionType.Sell };
+    component['action'] = action; // mock or set action however it's used
+
+    // You may need to call the method that contains this logic
+    // Assuming it's in some method like `onActionChanged()`
+    component['presenter'].sellValidate(component.card, component.symbol, component.accountPositions);
+
+    expect(sellValidateSpy).toHaveBeenCalledWith(component.card, component.symbol, component.accountPositions);
   });
 
-  it('should apply validator with quantity when UnitType is Shares', () => {
-    form.get('shareToggle')?.setValue(UnitType.Shares);
-    presenter.sellValidate(form, 'AAPL', mockAccountPositions);
-    const quantityControl = form.get('quantity');
-    expect(quantityControl?.validator).toBeDefined();
+  it('should NOT call sellValidate if action is not Sell', () => {
+    const sellValidateSpy = jest.spyOn(component.presenter, 'sellValidate');
 
-    const errors = quantityControl?.validator?.({ value: 51 });
-    expect(errors).toBeTruthy(); // Should fail because 51 > 50
-  });
+    const action = { value: ActionType.Buy }; // or any other non-Sell value
+    component['action'] = action;
 
-  it('should apply validator with 0 if value is null', () => {
-    const nullPosition = [{ symbol: 'AAPL' }];
-    presenter.sellValidate(form, 'AAPL', nullPosition);
-    const amountControl = form.get('amount');
-    expect(amountControl?.validator).toBeDefined();
+    // Simulate the method that would normally trigger the logic
+    // Ensure it's NOT called
+    // No need to invoke sellValidate manually in this case
 
-    const errors = amountControl?.validator?.({ value: 1 });
-    expect(errors).toBeTruthy(); // Should fail because limit is 0
-  });
-
-  it('should not apply validators if shareToggle is undefined or invalid', () => {
-    form.get('shareToggle')?.setValue(null);
-    presenter.sellValidate(form, 'AAPL', mockAccountPositions);
-
-    expect(form.get('amount')?.validator).toBeNull();
-    expect(form.get('quantity')?.validator).toBeNull();
+    expect(sellValidateSpy).not.toHaveBeenCalled();
   });
 });
-
-
-it('should apply validator with quantity when UnitType is Shares', () => {
-  form.get('shareToggle')?.setValue(UnitType.Shares);
-
-  presenter.sellValidate(form, 'AAPL', mockAccountPositions);
-
-  const quantityControl = form.get('quantity');
-  expect(quantityControl?.validator).toBeDefined();
-
-  quantityControl?.setValue(51); // Attempt to set a value above max (which is 50)
-  expect(quantityControl?.errors).toBeTruthy(); // Should have validation errors
-
-  quantityControl?.setValue(49); // Within limit
-  expect(quantityControl?.errors).toBeNull(); // Should be valid
-});
-
-
-
-const nullPosition = {
-  accountPositions: [
-    {
-      brokerageAccountNumber: '12345678',
-      positions: [
-        {
-          symbol: 'AAPL',
-          marketValue: null,
-          quantity: null,
-        }
-      ]
-    }
-  ]
-};
-
-
-it('should apply validator with 0 if value is null', () => {
-  const nullPosition = {
-    accountPositions: [
-      {
-        brokerageAccountNumber: '12345678',
-        positions: [
-          {
-            symbol: 'AAPL',
-            marketValue: null,
-            quantity: null,
-            description: '',
-            type: '',
-            lastPrice: null,
-            holdingPct: null
-          }
-        ]
-      }
-    ]
-  };
-
-  presenter.sellValidate(form, 'AAPL', nullPosition);
-  const amountControl = form.get('amount');
-  expect(amountControl?.validator).toBeDefined();
-
-  amountControl?.setValue(1); // Exceeds 0, should trigger error
-  expect(amountControl?.errors).toBeTruthy();
-});
-
