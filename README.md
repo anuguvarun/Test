@@ -73,3 +73,21 @@ it('should apply validator with quantity when UnitType is Shares', () => {
   quantityControl?.setValue(49); // Within limit
   expect(quantityControl?.errors).toBeNull(); // Should be valid
 });
+
+
+
+const nullPosition = {
+  accountPositions: [
+    {
+      brokerageAccountNumber: '12345678',
+      positions: [
+        {
+          symbol: 'AAPL',
+          marketValue: null,
+          quantity: null,
+        }
+      ]
+    }
+  ]
+};
+
