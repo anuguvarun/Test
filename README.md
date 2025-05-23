@@ -1,21 +1,39 @@
-it('should call sellValidate when action is Sell', () => {
-  const sellValidateSpy = jest.spyOn(component.presenter, 'sellValidate');
-  
-  component.action = { value: ActionType.Sell }; // or component.action.setValue(...) if it's a FormControl
-  component.ngOnInit(); // or trigger the method that contains the logic
+import { StepTwoCardComponent } from './step-two-card.component';
+import { SecurityType } from '../path-to-enum/security-type.enum';
 
-  expect(sellValidateSpy).toHaveBeenCalledWith(
-    component.card,
-    component.symbol,
-    component.accountPositions
-  );
-});
+describe('StepTwoCardComponent', () => {
+  let component: StepTwoCardComponent;
 
-it('should not call sellValidate when action is not Sell', () => {
-  const sellValidateSpy = jest.spyOn(component.presenter, 'sellValidate');
-  
-  component.action = { value: ActionType.Buy }; // or any non-Sell action
-  component.ngOnInit(); // or trigger the method that contains the logic
+  beforeEach(() => {
+    component = new StepTwoCardComponent();
+  });
 
-  expect(sellValidateSpy).not.toHaveBeenCalled();
+  it('should return true when tradeType is not FI', () => {
+    component.cards = [
+      { value: { tradeType: SecurityType.ETF } },
+      { value: { tradeType: SecurityType.MF } },
+    ];
+    component.index = 0;
+    expect(component.isNotFi()).toBe(true);
+  });
+
+  it('should return false when tradeType is FI', () => {
+    component.cards = [
+      { value: { tradeType: SecurityType.FI } }
+    ];
+    component.index = 0;
+    expect(component.isNotFi()).toBe(false);
+  });
+
+  it('should return true when value or tradeType is undefined', () => {
+    component.cards = [{ value: undefined }];
+    component.index = 0;
+    expect(component.isNotFi()).toBe(true);
+  });
+
+  it('should not throw if cards is empty', () => {
+    component.cards = [];
+    component.index = 0;
+    expect(() => component.isNotFi()).not.toThrow();
+  });
 });
