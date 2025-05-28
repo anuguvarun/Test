@@ -14,3 +14,40 @@
     <div class="trade-row"><span class="label">Fees:</span> <span>Included, if applicable</span></div>
   </div>
 </div>
+
+.trade-container {
+  border: 1px solid #ccc;
+  padding: 16px;
+  width: 320px;
+  font-family: Arial, sans-serif;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+.trade-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+.trade-number {
+  font-size: 16px;
+}
+
+.trade-amount {
+  color: green;
+  font-size: 18px;
+}
+
+.trade-details .trade-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.trade-details .label {
+  font-weight: bold;
+  margin-right: 8px;
+}
