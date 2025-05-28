@@ -1,39 +1,16 @@
-import { StepTwoCardComponent } from './step-two-card.component';
-import { SecurityType } from '../path-to-enum/security-type.enum';
-
-describe('StepTwoCardComponent', () => {
-  let component: StepTwoCardComponent;
-
-  beforeEach(() => {
-    component = new StepTwoCardComponent();
-  });
-
-  it('should return true when tradeType is not FI', () => {
-    component.cards = [
-      { value: { tradeType: SecurityType.ETF } },
-      { value: { tradeType: SecurityType.MF } },
-    ];
-    component.index = 0;
-    expect(component.isNotFi()).toBe(true);
-  });
-
-  it('should return false when tradeType is FI', () => {
-    component.cards = [
-      { value: { tradeType: SecurityType.FI } }
-    ];
-    component.index = 0;
-    expect(component.isNotFi()).toBe(false);
-  });
-
-  it('should return true when value or tradeType is undefined', () => {
-    component.cards = [{ value: undefined }];
-    component.index = 0;
-    expect(component.isNotFi()).toBe(true);
-  });
-
-  it('should not throw if cards is empty', () => {
-    component.cards = [];
-    component.index = 0;
-    expect(() => component.isNotFi()).not.toThrow();
-  });
-});
+<div class="trade-container">
+  <div class="trade-header">
+    <span class="trade-number">Trade 1 of 3</span>
+    <span class="trade-amount">$1,000.00</span>
+  </div>
+  
+  <div class="trade-details">
+    <div class="trade-row"><span class="label">Trade type:</span> <span>Mutual Fund</span></div>
+    <div class="trade-row"><span class="label">Security:</span> <span>SPAXX<br>Fidelity Government Money Market Fund</span></div>
+    <div class="trade-row"><span class="label">Last price:</span> <span>$1.00</span></div>
+    <div class="trade-row"><span class="label">Action:</span> <span>Buy</span></div>
+    <div class="trade-row"><span class="label">Type:</span> <span>Dollars</span></div>
+    <div class="trade-row"><span class="label">Amount:</span> <span>$1,000.00</span></div>
+    <div class="trade-row"><span class="label">Fees:</span> <span>Included, if applicable</span></div>
+  </div>
+</div>
