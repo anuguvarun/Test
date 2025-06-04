@@ -1,9 +1,3 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { FormGroup, FormControl } from '@angular/forms';
-import { ActionType } from './action-type.enum'; // adjust path as needed
-import { TradeOrderSuccessComponent } from './trade-order-success.component'; // adjust component name & path
-import { OrderStepsPresenter } from './order-steps-presenter'; // adjust path as needed
-
 describe('TradeOrderSuccessComponent', () => {
   let component: TradeOrderSuccessComponent;
   let fixture: ComponentFixture<TradeOrderSuccessComponent>;
@@ -24,22 +18,17 @@ describe('TradeOrderSuccessComponent', () => {
     fixture = TestBed.createComponent(TradeOrderSuccessComponent);
     component = fixture.componentInstance;
 
-    // Initialize mock cardValues as FormGroups before detectChanges
+    // ✅ Mocked like FormGroup, but not using FormGroup to avoid .get() issues
     component['cardValues'] = [
-      new FormGroup({
-        actionToggle: new FormControl(ActionType.Buy)
-      }),
-      new FormGroup({
-        actionToggle: new FormControl(ActionType.Sell)
-      }),
-      new FormGroup({
-        actionToggle: new FormControl(ActionType.Buy)
-      })
-    ];
+      { value: { actionToggle: ActionType.Buy } },
+      { value: { actionToggle: ActionType.Sell } },
+      { value: { actionToggle: ActionType.Buy } }
+    ] as any;
+
+    fixture.detectChanges();
   });
 
   it('should create', () => {
-    fixture.detectChanges();
     expect(component).toBeTruthy();
   });
 
@@ -49,19 +38,18 @@ describe('TradeOrderSuccessComponent', () => {
     expect(component.buyCards.length).toBe(2);
     expect(component.sellCards.length).toBe(1);
 
-    expect(component.buyCards.map(card => card.value)).toEqual([
-      { actionToggle: ActionType.Buy },
-      { actionToggle: ActionType.Buy }
+    expect(component.buyCards).toEqual([
+      { value: { actionToggle: ActionType.Buy } },
+      { value: { actionToggle: ActionType.Buy } }
     ]);
 
-    expect(component.sellCards.map(card => card.value)).toEqual([
-      { actionToggle: ActionType.Sell }
+    expect(component.sellCards).toEqual([
+      { value: { actionToggle: ActionType.Sell } }
     ]);
   });
 
   it('should call getCardInfoByAction with cardValues', () => {
     component.ngOnInit();
-
     expect(mockOrderStepPresenter.getCardInfoByAction).toHaveBeenCalledWith(component['cardValues']);
   });
 });
