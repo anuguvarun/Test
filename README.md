@@ -1,37 +1,32 @@
-import { YourComponent } from './your.component';
-import { OrderStepsPresenter } from './order-steps.presenter';
-import { ActionType } from './action-type.enum';
+import { MyComponent } from './my.component'; // Replace with actual component name
+import { ActionType } from './action-type.enum'; // Replace with actual enum import
 
-describe('YourComponent', () => {
-  let component: YourComponent;
-  let mockOrderStepPresenter: jest.Mocked<OrderStepsPresenter>;
+describe('MyComponent', () => {
+  let component: MyComponent;
 
   beforeEach(() => {
-    mockOrderStepPresenter = {
-      getCardInfoByAction: jest.fn()
-    } as any;
-
-    component = new YourComponent(mockOrderStepPresenter);
-
+    component = new MyComponent({ getCardInfoByAction: jest.fn() } as any); // Mock the presenter
     component.cardValues = [
       { value: { actionToggle: ActionType.Buy } },
       { value: { actionToggle: ActionType.Sell } },
-      { value: { actionToggle: ActionType.Buy } }
+      { value: { actionToggle: ActionType.Buy } },
     ];
   });
 
-  it('should separate buy and sell cards on ngOnInit', () => {
+  it('should populate buyCards with cards that have actionToggle = Buy', () => {
     component.ngOnInit();
-
     expect(component.buyCards.length).toBe(2);
-    expect(component.sellCards.length).toBe(1);
-
-    expect(component.buyCards.every(card => card.value.actionToggle === ActionType.Buy)).toBe(true);
-    expect(component.sellCards.every(card => card.value.actionToggle === ActionType.Sell)).toBe(true);
+    expect(component.buyCards.every(c => c.value.actionToggle === ActionType.Buy)).toBe(true);
   });
 
-  it('should call getCardInfoByAction with cardValues', () => {
+  it('should populate sellCards with cards that have actionToggle = Sell', () => {
     component.ngOnInit();
-    expect(mockOrderStepPresenter.getCardInfoByAction).toHaveBeenCalledWith(component.cardValues);
+    expect(component.sellCards.length).toBe(1);
+    expect(component.sellCards[0].value.actionToggle).toBe(ActionType.Sell);
+  });
+
+  it('should call getCardInfoByAction with the full cardValues array', () => {
+    component.ngOnInit();
+    expect(component.orderStepPresenter.getCardInfoByAction).toHaveBeenCalledWith(component.cardValues);
   });
 });
