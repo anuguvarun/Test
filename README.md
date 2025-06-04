@@ -1,55 +1,22 @@
-describe('TradeOrderSuccessComponent', () => {
-  let component: TradeOrderSuccessComponent;
-  let fixture: ComponentFixture<TradeOrderSuccessComponent>;
-  let mockOrderStepPresenter: any;
+@Input() cardValues: any[] = [];
 
-  beforeEach(() => {
-    mockOrderStepPresenter = {
-      getCardInfoByAction: jest.fn()
-    };
+buyCards: any[] = [];
+sellCards: any[] = [];
 
-    TestBed.configureTestingModule({
-      declarations: [TradeOrderSuccessComponent],
-      providers: [
-        { provide: OrderStepsPresenter, useValue: mockOrderStepPresenter }
-      ]
-    });
+constructor(public readonly orderStepPresenter: OrderStepsPresenter) {}
 
-    fixture = TestBed.createComponent(TradeOrderSuccessComponent);
-    component = fixture.componentInstance;
+ngOnChanges(): void {
+  if (Array.isArray(this.cardValues)) {
+    this.processCardValues();
+  }
+}
 
-    // ✅ Mocked like FormGroup, but not using FormGroup to avoid .get() issues
-    component['cardValues'] = [
-      { value: { actionToggle: ActionType.Buy } },
-      { value: { actionToggle: ActionType.Sell } },
-      { value: { actionToggle: ActionType.Buy } }
-    ] as any;
-
-    fixture.detectChanges();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
-  it('should filter buy and sell cards correctly on ngOnInit', () => {
-    component.ngOnInit();
-
-    expect(component.buyCards.length).toBe(2);
-    expect(component.sellCards.length).toBe(1);
-
-    expect(component.buyCards).toEqual([
-      { value: { actionToggle: ActionType.Buy } },
-      { value: { actionToggle: ActionType.Buy } }
-    ]);
-
-    expect(component.sellCards).toEqual([
-      { value: { actionToggle: ActionType.Sell } }
-    ]);
-  });
-
-  it('should call getCardInfoByAction with cardValues', () => {
-    component.ngOnInit();
-    expect(mockOrderStepPresenter.getCardInfoByAction).toHaveBeenCalledWith(component['cardValues']);
-  });
-});
+processCardValues(): void {
+  this.buyCards = this.cardValues.filter(
+    (card) => card?.value?.actionToggle === ActionType.Buy
+  );
+  this.sellCards = this.cardValues.filter(
+    (card) => card?.value?.actionToggle === ActionType.Sell
+  );
+  this.orderStepPresenter.getCardInfoByAction(this.cardValues);
+}
