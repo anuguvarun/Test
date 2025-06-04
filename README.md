@@ -1,56 +1,37 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { YourComponent } from './your.component';
-import { OrderStepsPresenter } from './order-steps-presenter';
-import { ActionType } from './action-type.enum'; // Adjust path accordingly
-import { of } from 'rxjs';
+import { OrderStepsPresenter } from './order-steps.presenter';
+import { ActionType } from './action-type.enum';
 
 describe('YourComponent', () => {
   let component: YourComponent;
-  let fixture: ComponentFixture<YourComponent>;
-  let mockOrderStepsPresenter: any;
+  let mockOrderStepPresenter: jest.Mocked<OrderStepsPresenter>;
 
   beforeEach(() => {
-    mockOrderStepsPresenter = {
+    mockOrderStepPresenter = {
       getCardInfoByAction: jest.fn()
-    };
+    } as any;
 
-    TestBed.configureTestingModule({
-      declarations: [YourComponent],
-      providers: [
-        { provide: OrderStepsPresenter, useValue: mockOrderStepsPresenter }
-      ]
-    });
+    component = new YourComponent(mockOrderStepPresenter);
 
-    fixture = TestBed.createComponent(YourComponent);
-    component = fixture.componentInstance;
-  });
-
-  it('should filter buy and sell cards correctly on ngOnInit', () => {
-    component['cardValues'] = [
+    component.cardValues = [
       { value: { actionToggle: ActionType.Buy } },
       { value: { actionToggle: ActionType.Sell } },
       { value: { actionToggle: ActionType.Buy } }
     ];
+  });
 
+  it('should separate buy and sell cards on ngOnInit', () => {
     component.ngOnInit();
 
     expect(component.buyCards.length).toBe(2);
     expect(component.sellCards.length).toBe(1);
 
-    expect(component.buyCards).toEqual([
-      { value: { actionToggle: ActionType.Buy } },
-      { value: { actionToggle: ActionType.Buy } }
-    ]);
-    expect(component.sellCards).toEqual([
-      { value: { actionToggle: ActionType.Sell } }
-    ]);
+    expect(component.buyCards.every(card => card.value.actionToggle === ActionType.Buy)).toBe(true);
+    expect(component.sellCards.every(card => card.value.actionToggle === ActionType.Sell)).toBe(true);
   });
 
   it('should call getCardInfoByAction with cardValues', () => {
-    component['cardValues'] = [];
-
     component.ngOnInit();
-
-    expect(mockOrderStepsPresenter.getCardInfoByAction).toHaveBeenCalledWith([]);
+    expect(mockOrderStepPresenter.getCardInfoByAction).toHaveBeenCalledWith(component.cardValues);
   });
 });
