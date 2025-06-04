@@ -1,32 +1,30 @@
-import { MyComponent } from './my.component'; // Replace with actual component name
-import { ActionType } from './action-type.enum'; // Replace with actual enum import
+// shared/base/base-trade-card.component.ts
 
-describe('MyComponent', () => {
-  let component: MyComponent;
+import { SecurityType, UnitType } from 'path-to-your-enums';
 
-  beforeEach(() => {
-    component = new MyComponent({ getCardInfoByAction: jest.fn() } as any); // Mock the presenter
-    component.cardValues = [
-      { value: { actionToggle: ActionType.Buy } },
-      { value: { actionToggle: ActionType.Sell } },
-      { value: { actionToggle: ActionType.Buy } },
-    ];
-  });
+export abstract class BaseTradeCardComponent {
+  tradeType = SecurityType;
+  unitType = UnitType;
 
-  it('should populate buyCards with cards that have actionToggle = Buy', () => {
-    component.ngOnInit();
-    expect(component.buyCards.length).toBe(2);
-    expect(component.buyCards.every(c => c.value.actionToggle === ActionType.Buy)).toBe(true);
-  });
+  index!: number;
+  cards: any[] = [];
 
-  it('should populate sellCards with cards that have actionToggle = Sell', () => {
-    component.ngOnInit();
-    expect(component.sellCards.length).toBe(1);
-    expect(component.sellCards[0].value.actionToggle).toBe(ActionType.Sell);
-  });
+  get isFi() {
+    return this.cards[this.index]?.value?.tradeType === SecurityType.FI;
+  }
 
-  it('should call getCardInfoByAction with the full cardValues array', () => {
-    component.ngOnInit();
-    expect(component.orderStepPresenter.getCardInfoByAction).toHaveBeenCalledWith(component.cardValues);
-  });
-});
+  getFeeOrLiquidateText(cardValue: any): string {
+    if (!cardValue) {
+      return '';
+    }
+
+    const isDollar = cardValue.shareToggle === UnitType.Dollars;
+    const isTradeTypeValid = [SecurityType.ETF, SecurityType.MF].includes(cardValue.tradeType);
+
+    if (isDollar && isTradeTypeValid) {
+      return cardValue.feesIncluded ? 'Included, if applicable' : '';
+    }
+
+    return cardValue.liquidateAll ? 'Yes' : '';
+  }
+}
