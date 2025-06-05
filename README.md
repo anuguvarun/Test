@@ -1,6 +1,4 @@
-import { FormGroup, FormControl } from '@angular/forms';
-
-it('should assign filtered cardValues to buyCards and sellCards', () => {
+it('should filter FormGroups using actionToggle', () => {
   const buyCard = new FormGroup({
     actionToggle: new FormControl('Buy')
   });
@@ -15,7 +13,6 @@ it('should assign filtered cardValues to buyCards and sellCards', () => {
 
   expect(component.buyCards?.length).toBe(1);
   expect(component.sellCards?.length).toBe(1);
-
   expect(component.buyCards[0].get('actionToggle')?.value).toBe('Buy');
   expect(component.sellCards[0].get('actionToggle')?.value).toBe('Sell');
 });
