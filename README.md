@@ -1,25 +1,4 @@
-it('should not throw error when filtering cardValues in ngOnInit', () => {
-  const buyCard = new FormGroup({
-    actionToggle: new FormControl(ActionType.Buy)
-  });
-
-  const sellCard = new FormGroup({
-    actionToggle: new FormControl(ActionType.Sell)
-  });
-
-  component.cardValues = [buyCard, sellCard];
-
-  component.ngOnInit();
-
-  expect(component.buyCards.length).toBe(1);
-  expect(component.sellCards.length).toBe(1);
-  expect(component.buyCards[0].get('actionToggle')?.value).toBe(ActionType.Buy);
-});
-
-
-
-it('should not throw error when card.value is a plain object', () => {
-  // ✅ Mock card structure to match component's actual usage
+it('should assign filtered cardValues to buyCards and sellCards', () => {
   component.cardValues = [
     { value: { actionToggle: 'Buy' } },
     { value: { actionToggle: 'Sell' } }
@@ -27,7 +6,9 @@ it('should not throw error when card.value is a plain object', () => {
 
   component.ngOnInit();
 
-  expect(component.buyCards.length).toBe(1);
-  expect(component.sellCards.length).toBe(1);
-});
+  expect(component.buyCards?.length).toBe(1);
+  expect(component.sellCards?.length).toBe(1);
 
+  expect(component.buyCards[0].value.actionToggle).toBe('Buy');
+  expect(component.sellCards[0].value.actionToggle).toBe('Sell');
+});
