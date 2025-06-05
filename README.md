@@ -15,3 +15,19 @@ it('should not throw error when filtering cardValues in ngOnInit', () => {
   expect(component.sellCards.length).toBe(1);
   expect(component.buyCards[0].get('actionToggle')?.value).toBe(ActionType.Buy);
 });
+
+
+
+it('should not throw error when card.value is a plain object', () => {
+  // ✅ Mock card structure to match component's actual usage
+  component.cardValues = [
+    { value: { actionToggle: 'Buy' } },
+    { value: { actionToggle: 'Sell' } }
+  ];
+
+  component.ngOnInit();
+
+  expect(component.buyCards.length).toBe(1);
+  expect(component.sellCards.length).toBe(1);
+});
+
