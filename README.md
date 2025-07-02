@@ -10,3 +10,13 @@
   "
   ...
 ></fcdl-segmented-control>
+
+
+
+ }"
+  [showErrorsIfClean]="
+    (actionToggle.errors?.securityHeldValidator && (!actionToggle.pristine || showError)) ||
+    (actionToggle.errors?.required && (actionToggle.touched || showError))
+  "
+  ...
+></fcdl-segmented-control>
