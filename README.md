@@ -1,36 +1,82 @@
-import { FormControl } from '@angular/forms';
-import { securityHeldValidator } from './path-to-your-validator-file';
+import { YourComponent } from './your-component'; // Replace with actual path
+import { Validators, FormControl } from '@angular/forms';
+import { ActionType } from './action-type.enum'; // Adjust based on actual import
+import { securityHeldValidator } from './validators'; // If defined elsewhere
 
-describe('securityHeldValidator', () => {
-  it('should return error if isHeld is true', () => {
-    const validatorFn = securityHeldValidator(true);
-    const control = new FormControl('123');
-    const result = validatorFn(control);
+describe('YourComponent', () => {
+  let component: YourComponent;
 
-    expect(result).toEqual({ securityHeldValidator: true });
+  beforeEach(() => {
+    component = new YourComponent();
+
+    // Mock basic structure
+    component.presenter = {
+      getMatchedPosition: jest.fn()
+    };
+    component.accountPositions = [{ id: 1 }];
+    component.cusip = { value: 'ABC123' };
+    component.actionToggle = new FormControl();
   });
 
-  it('should return null if isHeld is false', () => {
-    const validatorFn = securityHeldValidator(false);
-    const control = new FormControl('123');
-    const result = validatorFn(control);
+  describe('updateToggleVisibilityByCusip', () => {
+    it('should update toggle flags based on matched cusip when action is Sell and cusip is null', () => {
+      component.actionToggle.setValue(ActionType.Sell);
+      component.presenter.getMatchedPosition.mockReturnValue({ cusip: null });
 
-    expect(result).toBeNull();
+      component.updateToggleVisibilityByCusip();
+
+      expect(component.showUnitToggle).toBe(false);
+      expect(component.showAmountOrQuantityField).toBe(false);
+    });
+
+    it('should update toggle flags when cusip is not null', () => {
+      component.actionToggle.setValue(ActionType.Sell);
+      component.presenter.getMatchedPosition.mockReturnValue({ cusip: 'XYZ' });
+
+      component.updateToggleVisibilityByCusip();
+
+      expect(component.showUnitToggle).toBe(true);
+      expect(component.showAmountOrQuantityField).toBe(true);
+    });
+
+    it('should show both fields when action is not Sell', () => {
+      component.actionToggle.setValue(ActionType.Buy);
+
+      component.updateToggleVisibilityByCusip();
+
+      expect(component.showUnitToggle).toBe(true);
+      expect(component.showAmountOrQuantityField).toBe(true);
+    });
   });
 
-  it('should handle numeric values correctly', () => {
-    const validatorFn = securityHeldValidator(true);
-    const control = new FormControl(456);
-    const result = validatorFn(control);
+  describe('updateActionToggleValidatorsByCusip', () => {
+    it('should apply custom validator when cusip is null and action is Sell', () => {
+      component.actionToggle.setValue(ActionType.Sell);
+      component.presenter.getMatchedPosition.mockReturnValue({ cusip: null });
 
-    expect(result).toEqual({ securityHeldValidator: true });
-  });
+      component.updateActionToggleValidatorsByCusip();
 
-  it('should still return null even if control value is zero and isHeld is false', () => {
-    const validatorFn = securityHeldValidator(false);
-    const control = new FormControl(0);
-    const result = validatorFn(control);
+      const validators = component.actionToggle.validator?.(component.actionToggle);
+      expect(validators).toEqual({ securityHeldValidator: true });
+    });
 
-    expect(result).toBeNull();
+    it('should apply Validators.required when cusip is not null', () => {
+      component.actionToggle.setValue(ActionType.Sell);
+      component.presenter.getMatchedPosition.mockReturnValue({ cusip: 'XYZ' });
+
+      component.updateActionToggleValidatorsByCusip();
+
+      const validators = component.actionToggle.validator?.(component.actionToggle);
+      expect(validators).toBeNull(); // Because required would pass with a value
+    });
+
+    it('should default to Validators.required when action is not Sell', () => {
+      component.actionToggle.setValue(ActionType.Buy);
+
+      component.updateActionToggleValidatorsByCusip();
+
+      const validators = component.actionToggle.validator?.(component.actionToggle);
+      expect(validators).toBeNull(); // Required would pass with no real input
+    });
   });
 });
