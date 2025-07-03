@@ -1,22 +1,16 @@
-<fcdl-segmented-control
-  [control]="actionToggle"
-  [errorConfig]="{
-    required: { msg: 'Please select trade request type.' },
-    securityHeldValidator: { msg: 'Security not held in this account.' }
-  }"
-  [showErrorsIfClean]="
-    (actionToggle.errors?.securityHeldValidator && (actionToggle.dirty || showError)) ||
-    (actionToggle.errors?.required && (actionToggle.touched || showError))
-  "
-  ...
-></fcdl-segmented-control>
+private updateUiBasedOnActionAndCusip(): void {
+  if (this.actionToggle.value === ActionType.Sell) {
+    const matchedPosition = this.presenter.getMatchedPosition(
+      this.accountPositions,
+      this.cusip.value
+    );
 
+    const isCusipNull = matchedPosition?.cusip == null;
 
-
- }"
-  [showErrorsIfClean]="
-    (actionToggle.errors?.securityHeldValidator && (!actionToggle.pristine || showError)) ||
-    (actionToggle.errors?.required && (actionToggle.touched || showError))
-  "
-  ...
-></fcdl-segmented-control>
+    this.showUnitToggle = !isCusipNull;
+    this.showAmountOrQuantityField = !isCusipNull;
+  } else {
+    this.showUnitToggle = true;
+    this.showAmountOrQuantityField = true;
+  }
+}
