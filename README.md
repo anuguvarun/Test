@@ -1,24 +1,23 @@
-it('should call updateValueAndValidity and emit search symbol if tradeType exists and form is valid', (done) => {
-  component.tradeType = { value: 'MF' };
-  component.search = { value: 'T12345678', valid: true }; // Simulating FormControl
-  component.index = 0;
+@ViewChild('actionSegment', { static: false }) actionSegment: ElementRef;
 
-  spyOn(component, 'updateEstimatedValue');
-  spyOn(component.searchSymbol, 'emit');
-  spyOn(component, 'updateValueAndValidity').and.callThrough();
+handleSearchKeyDown(event: KeyboardEvent): void {
+  if (event.key === 'Tab') {
+    const secData = this.searchOptions.find(
+      (security) => security.value === this.search.value
+    );
 
-  component.onSearchEmit();
+    if (secData) {
+      event.preventDefault(); // Stop Tab from moving focus
 
-  setTimeout(() => {
-    expect(component.searchSymbol.emit).toHaveBeenCalledWith({
-      index: 0,
-      security: {
-        symbol: 'T12345678',
-        cusipNumber: 'T12345678',
-        securityType: 'FUND'
-      }
-    });
-    expect(component.updateEstimatedValue).toHaveBeenCalled();
-    done();
-  }, 150); // match the timeout in code
-});
+      this.onSearchSelectEmit();
+
+      setTimeout(() => {
+        const el: HTMLElement | null = this.actionSegment?.nativeElement;
+        if (el) {
+          const focusable = el.querySelector('input, button, [tabindex]:not([tabindex="-1"])') as HTMLElement;
+          focusable?.focus();
+        }
+      });
+    }
+  }
+}
