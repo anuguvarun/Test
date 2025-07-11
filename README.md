@@ -14,3 +14,18 @@ function duplicateCardValueValidator(index: number, cards: FormGroup[]): Validat
     return isDuplicate ? { duplicate: true } : null;
   };
 }
+this.cards.forEach((group, index) => {
+  const control = group.get('cardValue');
+  control?.setValidators([
+    Validators.required,
+    duplicateCardValueValidator(index, this.cards)
+  ]);
+
+  control?.valueChanges.subscribe(() => {
+    // Re-validate all controls to reflect latest state
+    this.cards.forEach((g, i) => {
+      const c = g.get('cardValue');
+      c?.updateValueAndValidity({ onlySelf: true, emitEvent: false });
+    });
+  });
+});
