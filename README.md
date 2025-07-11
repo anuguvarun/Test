@@ -1,31 +1,24 @@
-import { AbstractControl, ValidatorFn } from '@angular/forms';
+@Output() card = new EventEmitter<(index: number) => Promise<void>>();
 
-function duplicateCardValueValidator(index: number, cards: FormGroup[]): ValidatorFn {
-  return (control: AbstractControl): { [key: string]: any } | null => {
-    const currentValue = control.value?.trim()?.toLowerCase();
-    if (!currentValue) return null;
+async triggerCardEvent() {
+  if (!this.card.observers.length) return;
 
-    const isDuplicate = cards.some((group, i) => {
-      if (i === index) return false;
-      const value = group.get('cardValue')?.value?.trim()?.toLowerCase();
-      return value === currentValue;
+  // Emit a function call and wait for the parent's work to finish
+  const parentHandler = this.card.emit.bind(this.card) as (fn: (index: number) => Promise<void>) => void;
+
+  await new Promise<void>((resolve) => {
+    parentHandler(async (index: number) => {
+      // You pass index, and parent will execute this
+      await resolve(); // <- This resumes the next line in child after parent completes
     });
 
-    return isDuplicate ? { duplicate: true } : null;
-  };
-}
-this.cards.forEach((group, index) => {
-  const control = group.get('cardValue');
-  control?.setValidators([
-    Validators.required,
-    duplicateCardValueValidator(index, this.cards)
-  ]);
-
-  control?.valueChanges.subscribe(() => {
-    // Re-validate all controls to reflect latest state
-    this.cards.forEach((g, i) => {
-      const c = g.get('cardValue');
-      c?.updateValueAndValidity({ onlySelf: true, emitEvent: false });
-    });
+    // You can put any logic here that should run AFTER the parent is done
+    // But better: move the logic into `continueAfterParent()` as below
   });
-});
+
+  this.continueAfterParent(); // runs after parent finishes
+}
+
+continueAfterParent() {
+  console.log('✅ Child logic after parent finishes');
+}
