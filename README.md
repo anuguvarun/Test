@@ -1,44 +1,16 @@
-this.cards.forEach(group => {
-  group.get('cardValue')?.valueChanges.subscribe(() => {
-    this.checkForDuplicateCardValues();
-  });
-});
+import { AbstractControl, ValidatorFn } from '@angular/forms';
 
-checkForDuplicateCardValues(): void {
-  const valueMap = new Map<string, number[]>();
+function duplicateCardValueValidator(index: number, cards: FormGroup[]): ValidatorFn {
+  return (control: AbstractControl): { [key: string]: any } | null => {
+    const currentValue = control.value?.trim()?.toLowerCase();
+    if (!currentValue) return null;
 
-  // Step 1: Build a map of value to indices
-  this.cards.forEach((group, index) => {
-    const value = group.get('cardValue')?.value?.trim()?.toLowerCase();
-    if (value) {
-      if (!valueMap.has(value)) {
-        valueMap.set(value, []);
-      }
-      valueMap.get(value)!.push(index);
-    }
-  });
+    const isDuplicate = cards.some((group, i) => {
+      if (i === index) return false;
+      const value = group.get('cardValue')?.value?.trim()?.toLowerCase();
+      return value === currentValue;
+    });
 
-  // Step 2: Clear previous errors
-  this.cards.forEach(group => {
-    const control = group.get('cardValue');
-    if (control?.errors) {
-      const { duplicate, ...otherErrors } = control.errors;
-      if (Object.keys(otherErrors).length > 0) {
-        control.setErrors(otherErrors);
-      } else {
-        control.setErrors(null);
-      }
-    }
-  });
-
-  // Step 3: Apply duplicate errors
-  valueMap.forEach(indices => {
-    if (indices.length > 1) {
-      indices.forEach(i => {
-        const control = this.cards[i].get('cardValue');
-        const currentErrors = control?.errors || {};
-        control?.setErrors({ ...currentErrors, duplicate: true });
-      });
-    }
-  });
+    return isDuplicate ? { duplicate: true } : null;
+  };
 }
