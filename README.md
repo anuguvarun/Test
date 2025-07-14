@@ -16,3 +16,19 @@ export function duplicateCardValueValidator(
     return isDuplicate ? { duplicate: true } : null;
   };
 }
+
+duplicateSymbol(index: number): void {
+  const applyValidators = (controlName: string) => {
+    const control = this.cards[index].get(controlName);
+    if (control) {
+      control.setValidators([
+        Validators.required,
+        duplicateCardValueValidator(index, this.cards, controlName),
+      ]);
+      control.updateValueAndValidity();
+    }
+  };
+
+  applyValidators('search');
+  applyValidators('cusip');
+}
