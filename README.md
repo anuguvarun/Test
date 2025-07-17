@@ -1,28 +1,52 @@
-it('should set validators, update value and mark search control as touched', () => {
-  const fb = new FormBuilder();
+import { FormBuilder } from '@angular/forms';
 
-  // Mock duplicateSearchValidator
-  const mockValidator = jest.fn().mockReturnValue((control: AbstractControl) => null);
-  component['duplicateSearchValidator'] = mockValidator;
+describe('MyComponent', () => {
+  let component: MyComponent;
 
-  // Setup component.cards with FormGroups
-  const searchControl = fb.control('');
-  const formGroup = fb.group({ search: searchControl });
+  beforeEach(() => {
+    component = new MyComponent();
+    component.cards = [];
+    component.errors = {};
+    component.removals = {};
+    component.removeCard = { emit: jest.fn() };
+    component.addCard = jest.fn();
+    component.calculateAdjustedBalance = jest.fn();
+  });
 
-  component.cards = [formGroup];
-  
-  // Spy on the relevant methods
-  const setValidatorsSpy = jest.spyOn(searchControl, 'setValidators');
-  const updateSpy = jest.spyOn(searchControl, 'updateValueAndValidity');
-  const markSpy = jest.spyOn(searchControl, 'markAsTouched');
+  it('should remove a card and related data at given index', () => {
+    const fb = new FormBuilder();
 
-  // Call method under test
-  component.duplicateSearch(0);
+    component.cards = [
+      fb.group({ name: ['card1'] }),
+      fb.group({ name: ['card2'] }),
+      fb.group({ name: ['card3'] }),
+    ];
 
-  expect(setValidatorsSpy).toHaveBeenCalledWith([
-    Validators.required,
-    expect.any(Function)
-  ]);
-  expect(updateSpy).toHaveBeenCalled();
-  expect(markSpy).toHaveBeenCalled();
+    component.errors = { 1: 'error1' };
+    component.removals = { 1: 'remove1' };
+
+    component.onConfirmRemove(1);
+
+    expect(component.cards.length).toBe(2);
+    expect(component.cards[0].value.name).toBe('card1');
+    expect(component.cards[1].value.name).toBe('card3');
+    expect(component.errors[1]).toBeUndefined();
+    expect(component.removals[1]).toBeUndefined();
+    expect(component.removeCard.emit).toHaveBeenCalledWith(1);
+    expect(component.calculateAdjustedBalance).toHaveBeenCalled();
+  });
+
+  it('should call addCard if all cards are removed', () => {
+    const fb = new FormBuilder();
+
+    component.cards = [fb.group({ name: ['onlyCard'] })];
+    component.errors = {};
+    component.removals = {};
+
+    component.onConfirmRemove(0);
+
+    expect(component.cards.length).toBe(0); // before addCard is called
+    expect(component.addCard).toHaveBeenCalled();
+    expect(component.calculateAdjustedBalance).toHaveBeenCalled();
+  });
 });
