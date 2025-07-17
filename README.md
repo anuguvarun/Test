@@ -1,6 +1,6 @@
-it('should return null when no other tickers match (non-duplicate path)', () => {
-  const cards = [createGroup('AAPL'), createGroup('GOOGL')];
-  const control = new FormControl('TSLA');
-  const result = duplicateSearchValidator(2, cards)(control);
-  expect(result).toBeNull(); // hits false branch of line 14
+it('should explicitly hit the false branch of isDuplicate and return null', () => {
+  const cards = [createGroup('AAPL'), createGroup('GOOGL'), createGroup('MSFT')];
+  const control = new FormControl('TSLA'); // not a duplicate
+  const result = duplicateSearchValidator(1, cards)(control); // any index not 0
+  expect(result).toBeNull(); // hits the "false" path of ternary
 });
