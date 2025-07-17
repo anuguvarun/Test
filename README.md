@@ -1,20 +1,28 @@
-import { FormBuilder } from '@angular/forms';
-
-it('should remove card and related data at given index', () => {
+it('should set validators, update value and mark search control as touched', () => {
   const fb = new FormBuilder();
-  component.cards = [
-    fb.group({ name: ['card1'] }),
-    fb.group({ name: ['card2'] }),
-    fb.group({ name: ['card3'] }),
-  ];
-  component.errors = { 1: 'error1' };
-  component.removals = { 1: 'remove1' };
-  component.removeCard = { emit: jest.fn() };
-  component.addCard = jest.fn();
-  component.calculateAdjustedBalance = jest.fn();
 
-  component.onConfirmRemove(1);
+  // Mock duplicateSearchValidator
+  const mockValidator = jest.fn().mockReturnValue((control: AbstractControl) => null);
+  component['duplicateSearchValidator'] = mockValidator;
 
-  expect(component.cards.length).toBe(2);
-  expect(component.removeCard.emit).toHaveBeenCalledWith(1);
+  // Setup component.cards with FormGroups
+  const searchControl = fb.control('');
+  const formGroup = fb.group({ search: searchControl });
+
+  component.cards = [formGroup];
+  
+  // Spy on the relevant methods
+  const setValidatorsSpy = jest.spyOn(searchControl, 'setValidators');
+  const updateSpy = jest.spyOn(searchControl, 'updateValueAndValidity');
+  const markSpy = jest.spyOn(searchControl, 'markAsTouched');
+
+  // Call method under test
+  component.duplicateSearch(0);
+
+  expect(setValidatorsSpy).toHaveBeenCalledWith([
+    Validators.required,
+    expect.any(Function)
+  ]);
+  expect(updateSpy).toHaveBeenCalled();
+  expect(markSpy).toHaveBeenCalled();
 });
