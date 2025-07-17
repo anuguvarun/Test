@@ -1,46 +1,32 @@
-import { FormGroup, FormControl, Validators, FormArray } from '@angular/forms';
-import { duplicateSearchValidator } from './your-validator-file'; // adjust import as needed
-import { YourComponent } from './your-component-file';
+it('should remove card and related data at given index', () => {
+  const component = new YourComponent();
+  component.cards = ['card1', 'card2', 'card3'];
+  component.errors = { 1: 'error1' };
+  component.removals = { 1: 'remove1' };
+  component.removeCard = { emit: jest.fn() };
+  component.addCard = jest.fn();
+  component.calculateAdjustedBalance = jest.fn();
 
-jest.mock('./your-validator-file', () => ({
-  duplicateSearchValidator: jest.fn(),
-}));
+  component.onConfirmRemove(1);
 
-describe('YourComponent', () => {
-  let component: YourComponent;
+  expect(component.cards).toEqual(['card1', 'card3']);
+  expect(component.errors[1]).toBeUndefined();
+  expect(component.removals[1]).toBeUndefined();
+  expect(component.removeCard.emit).toHaveBeenCalledWith(1);
+  expect(component.calculateAdjustedBalance).toHaveBeenCalled();
+});
 
-  beforeEach(() => {
-    component = new YourComponent();
+it('should call addCard if all cards are removed', () => {
+  const component = new YourComponent();
+  component.cards = ['card1'];
+  component.errors = {};
+  component.removals = {};
+  component.removeCard = { emit: jest.fn() };
+  component.addCard = jest.fn();
+  component.calculateAdjustedBalance = jest.fn();
 
-    // Set up mock cards FormArray with FormGroups
-    component.cards = new FormArray([
-      new FormGroup({ search: new FormControl('') }),
-      new FormGroup({ search: new FormControl('') }),
-    ]);
-  });
+  component.onConfirmRemove(0);
 
-  it('should set validators, update value and mark control as touched', () => {
-    const index = 0;
-    const searchControl = component.cards.at(index).get('search') as FormControl;
-
-    // Spies
-    const setValidatorsSpy = jest.spyOn(searchControl, 'setValidators');
-    const updateValueAndValiditySpy = jest.spyOn(searchControl, 'updateValueAndValidity');
-    const markAsTouchedSpy = jest.spyOn(searchControl, 'markAsTouched');
-
-    // Mock return of validator
-    (duplicateSearchValidator as jest.Mock).mockReturnValue(() => null);
-
-    // Call function
-    component.duplicateSearch(index);
-
-    // Assertions
-    expect(setValidatorsSpy).toHaveBeenCalledWith([
-      Validators.required,
-      expect.any(Function),
-    ]);
-    expect(duplicateSearchValidator).toHaveBeenCalledWith(index, component.cards);
-    expect(updateValueAndValiditySpy).toHaveBeenCalled();
-    expect(markAsTouchedSpy).toHaveBeenCalled();
-  });
+  expect(component.cards.length).toBe(0); // temporarily empty before addCard
+  expect(component.addCard).toHaveBeenCalled();
 });
