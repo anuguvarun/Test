@@ -1,54 +1,11 @@
-import { Component } from '@angular/core';
+Impact Statement:
 
-@Component({
-  selector: 'your-component',
-  templateUrl: './your-component.component.html'
-})
-export class YourComponent {
-  isFi = true; // example
-  search = { value: '', pristine: true }; // example structure
-  tradeType = { value: '' }; // example
-  tradeTypeEnum = { MF: 'MF', ETF: 'ETF' };
-  searchOptions: any[] = [];
+This quarter, I contributed to improving the user experience and system robustness by delivering multiple enhancements across the application flow. I implemented routing guards between Step 1 and Step 2 to prevent unintended navigation, presenting users with a confirmation modal. I also enhanced Step 1 by introducing validation for the “Sell” flow, ensuring users cannot sell more than their available quantity or amount. Additionally, I contributed to building and refining the Thank You page logic by grouping trade cards under “Buy” and “Sell” categories, which dynamically reflect data from Step 1. I also added missing fields for liquidate and fees in Step 2, ensuring completeness of transaction data.
 
-  errorConfig = this.getErrorConfig();
+Self-Motivation:
 
-  getErrorConfig() {
-    return {
-      required: this.isFi
-        ? { msg: 'Please enter CUSIP.' }
-        : { msg: 'Please enter symbol.' },
+I proactively took ownership of both new development and existing gaps within the user journey. My contributions ranged from implementing core validations to fixing critical navigation issues—such as resolving a bug in GC where the Back button was non-functional in Step 2. I maintained a strong focus on usability and correctness while working independently and across modules. My drive to improve the user flow and eliminate edge cases reflects my commitment to delivering a seamless and reliable experience.
 
-      searchPattern:
-        this.search.value !== '' && this.search.value !== null
-          ? this.isFi
-            ? { msg: 'Please enter 9 alphanumeric characters.' }
-            : { msg: 'Please enter from 2 to 5 alphanumeric characters.' }
-          : null,
+Teamwork & Collaboration:
 
-      securityResponse:
-        this.search.value !== '' && this.search.value !== null
-          ? { msg: 'Security not found.' }
-          : null,
-
-      securitySearchError:
-        this.search.value !== '' &&
-        this.search.value !== null &&
-        this.searchOptions?.length === 0
-          ? this.tradeType.value === this.tradeTypeEnum.MF
-            ? { msg: 'Please enter valid Mutual Fund symbol.' }
-            : this.tradeType.value === this.tradeTypeEnum.ETF
-            ? { msg: 'Please enter valid ETF symbol.' }
-            : { msg: 'Security not found.' }
-          : null,
-
-      duplicate: this.isFi
-        ? { msg: 'Duplicate entry, choose a different CUSIP.' }
-        : { msg: 'Duplicate entry, choose a different symbol.' },
-    };
-  }
-
-  showErrorsIf(clean: boolean): boolean {
-    return this.search.pristine && clean;
-  }
-}
+I worked closely with team members throughout the quarter, actively supporting their development efforts and helping unblock issues when needed. I played a key role during the “Support May Release,” ensuring a stable rollout by providing timely fixes and verifications. I also contributed to peer code reviews, offered constructive feedback, and participated in sprint discussions to align user stories with development goals. This collaborative mindset helped strengthen team productivity and cohesion.
