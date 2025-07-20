@@ -1,11 +1,40 @@
-Impact Statement:
+errorConfig = {};
 
-This quarter, I contributed to improving the user experience and system robustness by delivering multiple enhancements across the application flow. I implemented routing guards between Step 1 and Step 2 to prevent unintended navigation, presenting users with a confirmation modal. I also enhanced Step 1 by introducing validation for the “Sell” flow, ensuring users cannot sell more than their available quantity or amount. Additionally, I contributed to building and refining the Thank You page logic by grouping trade cards under “Buy” and “Sell” categories, which dynamically reflect data from Step 1. I also added missing fields for liquidate and fees in Step 2, ensuring completeness of transaction data.
+ngOnInit() {
+  this.errorConfig = this.buildErrorConfig();
+}
 
-Self-Motivation:
+buildErrorConfig() {
+  return {
+    required: this.isFi
+      ? { msg: 'Please enter CUSIP.' }
+      : { msg: 'Please enter symbol.' },
 
-I proactively took ownership of both new development and existing gaps within the user journey. My contributions ranged from implementing core validations to fixing critical navigation issues—such as resolving a bug in GC where the Back button was non-functional in Step 2. I maintained a strong focus on usability and correctness while working independently and across modules. My drive to improve the user flow and eliminate edge cases reflects my commitment to delivering a seamless and reliable experience.
+    searchPattern:
+      this.search.value !== '' && this.search.value !== null
+        ? this.isFi
+          ? { msg: 'Please enter 9 alphanumeric characters.' }
+          : { msg: 'Please enter from 2 to 5 alphanumeric characters.' }
+        : { msg: '' },
 
-Teamwork & Collaboration:
+    securityResponse:
+      this.search.value !== '' && this.search.value !== null
+        ? { msg: 'Security not found.' }
+        : { msg: '' },
 
-I worked closely with team members throughout the quarter, actively supporting their development efforts and helping unblock issues when needed. I played a key role during the “Support May Release,” ensuring a stable rollout by providing timely fixes and verifications. I also contributed to peer code reviews, offered constructive feedback, and participated in sprint discussions to align user stories with development goals. This collaborative mindset helped strengthen team productivity and cohesion.
+    securitySearchError:
+      this.search.value !== '' &&
+      this.search.value !== null &&
+      this.searchOptions?.length === 0
+        ? this.tradeType.value === 'MF'
+          ? { msg: 'Please enter valid Mutual Fund symbol.' }
+          : this.tradeType.value === 'ETF'
+          ? { msg: 'Please enter valid ETF symbol.' }
+          : { msg: 'Security not found.' }
+        : { msg: '' },
+
+    duplicate: this.isFi
+      ? { msg: 'Duplicate entry, choose a different CUSIP.' }
+      : { msg: 'Duplicate entry, choose a different symbol.' },
+  };
+}
