@@ -1,44 +1,45 @@
-errorConfig(searchValue): string {
-  const getMessage = (msgForCUSIP: string, msgForSymbol: string) =>
+errorConfig(searchValue): any {
+  const getMsg = (msgForCUSIP: string, msgForSymbol: string) =>
     isFI ? { msg: msgForCUSIP } : { msg: msgForSymbol };
 
-  if (!searchValue?.required) {
-    return getMessage('Please enter CUSIP.', 'Please enter symbol.').msg;
-  }
+  return {
+    required: !searchValue?.value
+      ? getMsg('Please enter CUSIP.', 'Please enter symbol.')
+      : undefined,
 
-  if (searchValue?.searchPattern?.value) {
-    const length = searchValue.searchPattern.value.length;
-    if (isFI && length !== 9) {
-      return 'Please enter 9 alphanumeric characters.';
-    }
-    if (!isFI && (length < 2 || length > 5)) {
-      return 'Please enter from 2 to 5 alphanumeric characters.';
-    }
-  }
+    searchPattern:
+      searchValue?.value !== null && searchValue?.value !== undefined
+        ? isFI
+          ? searchValue.value.length !== 9
+            ? { msg: 'Please enter 9 alphanumeric characters.' }
+            : undefined
+          : (searchValue.value.length < 2 || searchValue.value.length > 5)
+            ? { msg: 'Please enter from 2 to 5 alphanumeric characters.' }
+            : undefined
+        : undefined,
 
-  if (searchValue?.securityResponse?.value) {
-    return 'Security not found.';
-  }
+    securityResponse:
+      searchValue?.value !== null && searchValue?.value !== undefined
+        ? { msg: 'Security not found.' }
+        : undefined,
 
-  if (
-    searchValue?.securitySearchError?.value &&
-    !searchValue.searchOptions?.length
-  ) {
-    if (searchValue.tradeType?.value === tradeTypeEnum.MF) {
-      return 'Please enter valid Mutual Fund symbol.';
-    }
-    if (searchValue.tradeType?.value === tradeTypeEnum.ETF) {
-      return 'Please enter valid ETF symbol.';
-    }
-    return 'Security not found.';
-  }
+    securitySearchError:
+      searchValue?.value !== null &&
+      searchValue?.value !== undefined &&
+      (!searchOptions || searchOptions.length === 0)
+        ? searchValue?.tradeType?.value === tradeTypeEnum.MF
+          ? { msg: 'Please enter valid Mutual Fund symbol.' }
+          : searchValue?.tradeType?.value === tradeTypeEnum.ETF
+            ? { msg: 'Please enter valid ETF symbol.' }
+            : { msg: 'Security not found.' }
+        : undefined,
 
-  if (searchValue?.duplicate) {
-    return getMessage(
-      'Duplicate entry, choose a different CUSIP.',
-      'Duplicate entry, choose a different symbol.'
-    ).msg;
-  }
-
-  return '';
+    duplicate: isFI
+      ? searchValue?.duplicate
+        ? { msg: 'Duplicate entry, choose a different CUSIP.' }
+        : undefined
+      : searchValue?.duplicate
+        ? { msg: 'Duplicate entry, choose a different symbol.' }
+        : undefined
+  };
 }
