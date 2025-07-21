@@ -1,47 +1,34 @@
 get errorConfig() {
-  const searchVal = this.search?.value ?? '';
-  const tradeTypeVal = this.tradeType?.value ?? '';
-  const hasSearchVal = searchVal !== '';
-  const hasSearchOptions = Array.isArray(this.searchOptions) && this.searchOptions.length > 0;
+  return {
+    required: this.isFi
+      ? { msg: 'Please enter CUSIP.' }
+      : { msg: 'Please enter symbol.' },
 
-  console.log('[errorConfig] this.search:', this.search);
-  console.log('[errorConfig] this.search.value:', this.search?.value);
-  console.log('[errorConfig] hasSearchVal:', hasSearchVal);
-  console.log('[errorConfig] hasSearchOptions:', hasSearchOptions);
+    searchPattern:
+      this.search.value !== '' && this.search.value !== null
+        ? this.isFi
+          ? { msg: 'Please enter 9 alphanumeric characters.' }
+          : { msg: 'Please enter from 2 to 5 alphanumeric characters.' }
+        : { msg: '' },
 
-  const config: any = {};
+    securityResponse:
+      this.search.value !== '' && this.search.value !== null
+        ? { msg: 'Security not found.' }
+        : { msg: '' },
 
-  if (this.isFi) {
-    config.required = { msg: 'Please enter CUSIP.' };
-  } else {
-    config.required = { msg: 'Please enter symbol.' };
-  }
+    securitySearchError:
+      this.search.value !== '' &&
+      this.search.value !== null &&
+      this.searchOptions?.length === 0
+        ? this.tradeType.value === 'MF'
+          ? { msg: 'Please enter valid Mutual Fund symbol.' }
+          : this.tradeType.value === 'ETF'
+          ? { msg: 'Please enter valid ETF symbol.' }
+          : { msg: 'Security not found.' }
+        : { msg: '' },
 
-  if (hasSearchVal) {
-    config.searchPattern = this.isFi
-      ? { msg: 'Please enter 9 alphanumeric characters.' }
-      : { msg: 'Please enter from 2 to 5 alphanumeric characters.' };
-  } else {
-    config.searchPattern = { msg: '' };
-  }
-
-  config.securityResponse = hasSearchVal ? { msg: 'Security not found.' } : { msg: '' };
-
-  if (hasSearchVal && !hasSearchOptions) {
-    if (tradeTypeVal === 'MF') {
-      config.securitySearchError = { msg: 'Please enter valid Mutual Fund symbol.' };
-    } else if (tradeTypeVal === 'ETF') {
-      config.securitySearchError = { msg: 'Please enter valid ETF symbol.' };
-    } else {
-      config.securitySearchError = { msg: 'Security not found.' };
-    }
-  } else {
-    config.securitySearchError = { msg: '' };
-  }
-
-  config.duplicate = this.isFi
-    ? { msg: 'Duplicate entry, choose a different CUSIP.' }
-    : { msg: 'Duplicate entry, choose a different symbol.' };
-
-  return config;
+    duplicate: this.isFi
+      ? { msg: 'Duplicate entry, choose a different CUSIP.' }
+      : { msg: 'Duplicate entry, choose a different symbol.' },
+  };
 }
