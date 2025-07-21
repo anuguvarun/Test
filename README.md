@@ -1,30 +1,44 @@
-export class SearchComponent {
-  isFi: boolean = true; // or however it's set
-  search = { value: '' };
-  tradeType = { value: '' };
-  tradeTypeEnum = 'someValue'; // replace with actual enum or value
-  showError: boolean = true;
+errorConfig(searchValue): string {
+  const getMessage = (msgForCUSIP: string, msgForSymbol: string) =>
+    isFI ? { msg: msgForCUSIP } : { msg: msgForSymbol };
 
-  errorConfig = {
-    required: this.isFi
-      ? { msg: 'Please enter 9 alphanumeric characters.' }
-      : { msg: 'Please enter from 3 to 5 characters.' },
+  if (!searchValue?.required) {
+    return getMessage('Please enter CUSIP.', 'Please enter symbol.').msg;
+  }
 
-    searchPattern: this.search.value !== ''
-      ? this.isFi
-        ? { msg: 'Please enter 9 alphanumeric characters.' }
-        : { msg: 'Please enter valid input.' }
-      : { msg: '' },
+  if (searchValue?.searchPattern?.value) {
+    const length = searchValue.searchPattern.value.length;
+    if (isFI && length !== 9) {
+      return 'Please enter 9 alphanumeric characters.';
+    }
+    if (!isFI && (length < 2 || length > 5)) {
+      return 'Please enter from 2 to 5 alphanumeric characters.';
+    }
+  }
 
-    securityResponse: this.search.value !== '' && this.search.value === 'invalid'
-      ? { msg: 'Security not found.' }
-      : { msg: '' },
+  if (searchValue?.securityResponse?.value) {
+    return 'Security not found.';
+  }
 
-    securitySearchError:
-      this.search.value !== '' && this.search.value === 'somethingInvalid'
-        ? this.tradeType.value === this.tradeTypeEnum
-          ? { msg: 'Please enter valid trade type.' }
-          : { msg: '' }
-        : { msg: '' },
-  };
+  if (
+    searchValue?.securitySearchError?.value &&
+    !searchValue.searchOptions?.length
+  ) {
+    if (searchValue.tradeType?.value === tradeTypeEnum.MF) {
+      return 'Please enter valid Mutual Fund symbol.';
+    }
+    if (searchValue.tradeType?.value === tradeTypeEnum.ETF) {
+      return 'Please enter valid ETF symbol.';
+    }
+    return 'Security not found.';
+  }
+
+  if (searchValue?.duplicate) {
+    return getMessage(
+      'Duplicate entry, choose a different CUSIP.',
+      'Duplicate entry, choose a different symbol.'
+    ).msg;
+  }
+
+  return '';
 }
