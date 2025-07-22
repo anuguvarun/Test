@@ -1,81 +1,29 @@
-// __tests__/StepCardComponent.test.ts
+jest.useFakeTimers();
 
-import StepCardComponent from '../components/StepCardComponent'; // adjust path as needed
+it('...should focus and call methods correctly', () => {
+  const setErrorSpy = jest.spyOn(component.search, 'setErrors');
+  const onSearchSelectEmitSpy = jest.spyOn(component, 'onSearchSelectEmit');
 
-describe('StepCardComponent - errorConfig', () => {
-  const tradeTypeEnum = { MF: 'MF', ETF: 'ETF' };
+  component.search.setValue('A');
+  component.searchOptions = [{ cusip: 'T12345678', value: 'A', description: '' }];
 
-  const createInstance = (overrides = {}) => {
-    const component = new StepCardComponent();
-    component.isFi = false;
-    component.search = { value: '' };
-    component.searchOptions = [];
-    component.tradeType = { value: '' };
-    component.tradeTypeEnum = tradeTypeEnum;
+  component.securityPriceSearchOnBlur(index);
 
-    Object.assign(component, overrides);
-    return component;
-  };
+  expect(setErrorSpy).not.toHaveBeenCalled();
+  expect(onSearchSelectEmitSpy).toHaveBeenCalledTimes(1);
 
-  it('should return CUSIP error when isFi is true', () => {
-    const instance = createInstance({ isFi: true });
-    expect(instance.errorConfig.required.msg).toBe('Please enter CUSIP.');
-  });
+  const elementSpy = jest.spyOn(documentStub, 'getElementById');
+  const element = documentStub.getElementById('actionToggle' + index);
 
-  it('should return symbol error when isFi is false', () => {
-    const instance = createInstance({ isFi: false });
-    expect(instance.errorConfig.required.msg).toBe('Please enter symbol.');
-  });
+  const querySelectorSpy = jest.spyOn(element, 'querySelector');
+  const focusableElementSpy = jest.spyOn(element.querySelector(''), 'focus');
 
-  it('should validate searchPattern for CUSIP', () => {
-    const instance = createInstance({ isFi: true, search: { value: '123' } });
-    expect(instance.errorConfig.searchPattern.msg).toBe('Please enter 9 alphanumeric characters.');
-  });
+  // Advance timers
+  jest.runAllTimers();
 
-  it('should validate searchPattern for symbol', () => {
-    const instance = createInstance({ isFi: false, search: { value: 'XYZ' } });
-    expect(instance.errorConfig.searchPattern.msg).toBe('Please enter from 2 to 5 alphanumeric characters.');
-  });
-
-  it('should return security not found if input is given', () => {
-    const instance = createInstance({ search: { value: 'ZZZ' } });
-    expect(instance.errorConfig.securityResponse.msg).toBe('Security not found.');
-  });
-
-  it('should return MF symbol error if tradeType is MF and searchOptions empty', () => {
-    const instance = createInstance({
-      search: { value: 'MF123' },
-      searchOptions: [],
-      tradeType: { value: 'MF' },
-    });
-    expect(instance.errorConfig.securitySearchError.msg).toBe('Please enter valid Mutual Fund symbol.');
-  });
-
-  it('should return ETF symbol error if tradeType is ETF and searchOptions empty', () => {
-    const instance = createInstance({
-      search: { value: 'ETF456' },
-      searchOptions: [],
-      tradeType: { value: 'ETF' },
-    });
-    expect(instance.errorConfig.securitySearchError.msg).toBe('Please enter valid ETF symbol.');
-  });
-
-  it('should return default security not found error if tradeType unknown', () => {
-    const instance = createInstance({
-      search: { value: 'XYZ' },
-      searchOptions: [],
-      tradeType: { value: 'OTHER' },
-    });
-    expect(instance.errorConfig.securitySearchError.msg).toBe('Security not found.');
-  });
-
-  it('should return duplicate CUSIP message if isFi is true', () => {
-    const instance = createInstance({ isFi: true });
-    expect(instance.errorConfig.duplicate.msg).toBe('Duplicate entry, choose a different CUSIP.');
-  });
-
-  it('should return duplicate symbol message if isFi is false', () => {
-    const instance = createInstance({ isFi: false });
-    expect(instance.errorConfig.duplicate.msg).toBe('Duplicate entry, choose a different symbol.');
-  });
+  expect(elementSpy).toHaveBeenCalledTimes(1);
+  expect(querySelectorSpy).toHaveBeenCalledWith(
+    'input, [tabindex]:not([tabindex="-1"])'
+  );
+  expect(focusableElementSpy).toHaveBeenCalledTimes(1);
 });
