@@ -1,5 +1,5 @@
-it('should call onSearchSelectEmit and focus the next input when matching security is found', () => {
-  jest.useFakeTimers();
+it('should emit and focus input when matching security is found', () => {
+  jest.useFakeTimers(); // Setup fake timers
 
   const index = 0;
 
@@ -9,21 +9,28 @@ it('should call onSearchSelectEmit and focus the next input when matching securi
   component.search.setValue('A');
   component.searchOptions = [{ cusip: 'T12345678', value: 'A', description: '' }];
 
-  // Full DOM Mocking (global level)
+  // Mocks for document interaction
   const focusMock = jest.fn();
   const querySelectorMock = jest.fn().mockReturnValue({ focus: focusMock });
-  const getElementByIdMock = jest.spyOn(document, 'getElementById').mockReturnValue({
-    querySelector: querySelectorMock
-  } as any);
 
+  const getElementByIdMock = jest
+    .spyOn(document, 'getElementById')
+    .mockReturnValue({ querySelector: querySelectorMock } as any);
+
+  // Run the method
   component.securityPriceSearchOnBlur(index);
+
+  // Check immediate behavior
   expect(setErrorsSpy).not.toHaveBeenCalled();
   expect(onSearchSelectEmitSpy).toHaveBeenCalledTimes(1);
 
-  // Trigger the focus logic
+  // Execute any pending setTimeout
   jest.runAllTimers();
 
+  // Validate DOM behavior
   expect(getElementByIdMock).toHaveBeenCalledWith('actionToggle' + index);
-  expect(querySelectorMock).toHaveBeenCalledWith('input, [tabindex]:not([tabindex="-1"])');
+  expect(querySelectorMock).toHaveBeenCalledWith(
+    'input, [tabindex]:not([tabindex="-1"])'
+  );
   expect(focusMock).toHaveBeenCalledTimes(1);
 });
