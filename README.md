@@ -1,4 +1,4 @@
-import { YourComponent } from './your-component-file';
+hi import { YourComponent } from './your-component-file';
 
 describe('YourComponent errorConfig getter', () => {
   let component: YourComponent;
@@ -72,23 +72,25 @@ describe('YourComponent errorConfig getter', () => {
 setTimeout(() => {
   const elementSpy = jest.spyOn(documentStub, 'getElementById');
 
-  const fakeElement = {
-    querySelector: jest.fn(),
+  const mockFocusable = {
+    focus: jest.fn()
   };
 
-  const fakeFocusable = {
-    focus: jest.fn(),
+  const mockElement = {
+    querySelector: jest.fn().mockReturnValue(mockFocusable)
   };
 
-  // Stub getElementById to return fakeElement
-  documentStub.getElementById = jest.fn().mockReturnValue(fakeElement);
+  documentStub.getElementById = jest.fn().mockReturnValue(mockElement);
 
-  // Stub querySelector to return fakeFocusable
-  fakeElement.querySelector.mockReturnValue(fakeFocusable);
+  component.securityPriceSearchOnBlur(index); // Run the logic after mocking
 
-  component.securityPriceSearchOnBlur(index);
-
+  // ✅ Assertions
   expect(elementSpy).toHaveBeenCalledWith('actionToggle0');
-  expect(fakeElement.querySelector).toHaveBeenCalledWith('input, [tabindex]:not([tabindex="-1"])');
-  expect(fakeFocusable.focus).toHaveBeenCalled();
+  expect(mockElement.querySelector).toHaveBeenCalledWith('input, [tabindex]:not([tabindex="-1"])');
+  expect(mockFocusable.focus).toHaveBeenCalledTimes(1);
 });
+
+
+
+
+
