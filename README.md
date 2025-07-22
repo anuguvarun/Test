@@ -1,45 +1,67 @@
-errorConfig(searchValue): any {
-  const getMsg = (msgForCUSIP: string, msgForSymbol: string) =>
-    isFI ? { msg: msgForCUSIP } : { msg: msgForSymbol };
+import { YourComponent } from './your-component-file';
 
-  return {
-    required: !searchValue?.value
-      ? getMsg('Please enter CUSIP.', 'Please enter symbol.')
-      : undefined,
+describe('YourComponent errorConfig getter', () => {
+  let component: YourComponent;
 
-    searchPattern:
-      searchValue?.value !== null && searchValue?.value !== undefined
-        ? isFI
-          ? searchValue.value.length !== 9
-            ? { msg: 'Please enter 9 alphanumeric characters.' }
-            : undefined
-          : (searchValue.value.length < 2 || searchValue.value.length > 5)
-            ? { msg: 'Please enter from 2 to 5 alphanumeric characters.' }
-            : undefined
-        : undefined,
+  beforeEach(() => {
+    component = new YourComponent();
+  });
 
-    securityResponse:
-      searchValue?.value !== null && searchValue?.value !== undefined
-        ? { msg: 'Security not found.' }
-        : undefined,
+  it('should return correct required message for isFi=true', () => {
+    component.isFi = true;
+    expect(component.errorConfig.required.msg).toBe('Please enter CUSIP.');
+  });
 
-    securitySearchError:
-      searchValue?.value !== null &&
-      searchValue?.value !== undefined &&
-      (!searchOptions || searchOptions.length === 0)
-        ? searchValue?.tradeType?.value === tradeTypeEnum.MF
-          ? { msg: 'Please enter valid Mutual Fund symbol.' }
-          : searchValue?.tradeType?.value === tradeTypeEnum.ETF
-            ? { msg: 'Please enter valid ETF symbol.' }
-            : { msg: 'Security not found.' }
-        : undefined,
+  it('should return correct required message for isFi=false', () => {
+    component.isFi = false;
+    expect(component.errorConfig.required.msg).toBe('Please enter symbol.');
+  });
 
-    duplicate: isFI
-      ? searchValue?.duplicate
-        ? { msg: 'Duplicate entry, choose a different CUSIP.' }
-        : undefined
-      : searchValue?.duplicate
-        ? { msg: 'Duplicate entry, choose a different symbol.' }
-        : undefined
-  };
-}
+  it('should return correct searchPattern for CUSIP', () => {
+    component.search.value = '123456789';
+    component.isFi = true;
+    expect(component.errorConfig.searchPattern.msg).toBe('Please enter 9 alphanumeric characters.');
+  });
+
+  it('should return correct searchPattern for symbol', () => {
+    component.search.value = 'AAPL';
+    component.isFi = false;
+    expect(component.errorConfig.searchPattern.msg).toBe('Please enter from 2 to 5 alphanumeric characters.');
+  });
+
+  it('should return securityResponse for valid input', () => {
+    component.search.value = 'AAPL';
+    expect(component.errorConfig.securityResponse.msg).toBe('Security not found.');
+  });
+
+  it('should return securitySearchError for MF', () => {
+    component.search.value = 'FOO';
+    component.tradeType.value = 'MF';
+    component.searchOptions = [];
+    expect(component.errorConfig.securitySearchError.msg).toBe('Please enter valid Mutual Fund symbol.');
+  });
+
+  it('should return securitySearchError for ETF', () => {
+    component.search.value = 'BAR';
+    component.tradeType.value = 'ETF';
+    component.searchOptions = [];
+    expect(component.errorConfig.securitySearchError.msg).toBe('Please enter valid ETF symbol.');
+  });
+
+  it('should return fallback securitySearchError', () => {
+    component.search.value = 'XXX';
+    component.tradeType.value = 'OTHER';
+    component.searchOptions = [];
+    expect(component.errorConfig.securitySearchError.msg).toBe('Security not found.');
+  });
+
+  it('should return duplicate CUSIP message if isFi=true', () => {
+    component.isFi = true;
+    expect(component.errorConfig.duplicate.msg).toBe('Duplicate entry, choose a different CUSIP.');
+  });
+
+  it('should return duplicate symbol message if isFi=false', () => {
+    component.isFi = false;
+    expect(component.errorConfig.duplicate.msg).toBe('Duplicate entry, choose a different symbol.');
+  });
+});
