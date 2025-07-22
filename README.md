@@ -1,96 +1,81 @@
-hi import { YourComponent } from './your-component-file';
+// __tests__/StepCardComponent.test.ts
 
-describe('YourComponent errorConfig getter', () => {
-  let component: YourComponent;
+import StepCardComponent from '../components/StepCardComponent'; // adjust path as needed
 
-  beforeEach(() => {
-    component = new YourComponent();
-  });
+describe('StepCardComponent - errorConfig', () => {
+  const tradeTypeEnum = { MF: 'MF', ETF: 'ETF' };
 
-  it('should return correct required message for isFi=true', () => {
-    component.isFi = true;
-    expect(component.errorConfig.required.msg).toBe('Please enter CUSIP.');
-  });
-
-  it('should return correct required message for isFi=false', () => {
+  const createInstance = (overrides = {}) => {
+    const component = new StepCardComponent();
     component.isFi = false;
-    expect(component.errorConfig.required.msg).toBe('Please enter symbol.');
-  });
-
-  it('should return correct searchPattern for CUSIP', () => {
-    component.search.value = '123456789';
-    component.isFi = true;
-    expect(component.errorConfig.searchPattern.msg).toBe('Please enter 9 alphanumeric characters.');
-  });
-
-  it('should return correct searchPattern for symbol', () => {
-    component.search.value = 'AAPL';
-    component.isFi = false;
-    expect(component.errorConfig.searchPattern.msg).toBe('Please enter from 2 to 5 alphanumeric characters.');
-  });
-
-  it('should return securityResponse for valid input', () => {
-    component.search.value = 'AAPL';
-    expect(component.errorConfig.securityResponse.msg).toBe('Security not found.');
-  });
-
-  it('should return securitySearchError for MF', () => {
-    component.search.value = 'FOO';
-    component.tradeType.value = 'MF';
+    component.search = { value: '' };
     component.searchOptions = [];
-    expect(component.errorConfig.securitySearchError.msg).toBe('Please enter valid Mutual Fund symbol.');
-  });
+    component.tradeType = { value: '' };
+    component.tradeTypeEnum = tradeTypeEnum;
 
-  it('should return securitySearchError for ETF', () => {
-    component.search.value = 'BAR';
-    component.tradeType.value = 'ETF';
-    component.searchOptions = [];
-    expect(component.errorConfig.securitySearchError.msg).toBe('Please enter valid ETF symbol.');
-  });
-
-  it('should return fallback securitySearchError', () => {
-    component.search.value = 'XXX';
-    component.tradeType.value = 'OTHER';
-    component.searchOptions = [];
-    expect(component.errorConfig.securitySearchError.msg).toBe('Security not found.');
-  });
-
-  it('should return duplicate CUSIP message if isFi=true', () => {
-    component.isFi = true;
-    expect(component.errorConfig.duplicate.msg).toBe('Duplicate entry, choose a different CUSIP.');
-  });
-
-  it('should return duplicate symbol message if isFi=false', () => {
-    component.isFi = false;
-    expect(component.errorConfig.duplicate.msg).toBe('Duplicate entry, choose a different symbol.');
-  });
-});
-
-
-
-
-setTimeout(() => {
-  const elementSpy = jest.spyOn(documentStub, 'getElementById');
-
-  const mockFocusable = {
-    focus: jest.fn()
+    Object.assign(component, overrides);
+    return component;
   };
 
-  const mockElement = {
-    querySelector: jest.fn().mockReturnValue(mockFocusable)
-  };
+  it('should return CUSIP error when isFi is true', () => {
+    const instance = createInstance({ isFi: true });
+    expect(instance.errorConfig.required.msg).toBe('Please enter CUSIP.');
+  });
 
-  documentStub.getElementById = jest.fn().mockReturnValue(mockElement);
+  it('should return symbol error when isFi is false', () => {
+    const instance = createInstance({ isFi: false });
+    expect(instance.errorConfig.required.msg).toBe('Please enter symbol.');
+  });
 
-  component.securityPriceSearchOnBlur(index); // Run the logic after mocking
+  it('should validate searchPattern for CUSIP', () => {
+    const instance = createInstance({ isFi: true, search: { value: '123' } });
+    expect(instance.errorConfig.searchPattern.msg).toBe('Please enter 9 alphanumeric characters.');
+  });
 
-  // ✅ Assertions
-  expect(elementSpy).toHaveBeenCalledWith('actionToggle0');
-  expect(mockElement.querySelector).toHaveBeenCalledWith('input, [tabindex]:not([tabindex="-1"])');
-  expect(mockFocusable.focus).toHaveBeenCalledTimes(1);
+  it('should validate searchPattern for symbol', () => {
+    const instance = createInstance({ isFi: false, search: { value: 'XYZ' } });
+    expect(instance.errorConfig.searchPattern.msg).toBe('Please enter from 2 to 5 alphanumeric characters.');
+  });
+
+  it('should return security not found if input is given', () => {
+    const instance = createInstance({ search: { value: 'ZZZ' } });
+    expect(instance.errorConfig.securityResponse.msg).toBe('Security not found.');
+  });
+
+  it('should return MF symbol error if tradeType is MF and searchOptions empty', () => {
+    const instance = createInstance({
+      search: { value: 'MF123' },
+      searchOptions: [],
+      tradeType: { value: 'MF' },
+    });
+    expect(instance.errorConfig.securitySearchError.msg).toBe('Please enter valid Mutual Fund symbol.');
+  });
+
+  it('should return ETF symbol error if tradeType is ETF and searchOptions empty', () => {
+    const instance = createInstance({
+      search: { value: 'ETF456' },
+      searchOptions: [],
+      tradeType: { value: 'ETF' },
+    });
+    expect(instance.errorConfig.securitySearchError.msg).toBe('Please enter valid ETF symbol.');
+  });
+
+  it('should return default security not found error if tradeType unknown', () => {
+    const instance = createInstance({
+      search: { value: 'XYZ' },
+      searchOptions: [],
+      tradeType: { value: 'OTHER' },
+    });
+    expect(instance.errorConfig.securitySearchError.msg).toBe('Security not found.');
+  });
+
+  it('should return duplicate CUSIP message if isFi is true', () => {
+    const instance = createInstance({ isFi: true });
+    expect(instance.errorConfig.duplicate.msg).toBe('Duplicate entry, choose a different CUSIP.');
+  });
+
+  it('should return duplicate symbol message if isFi is false', () => {
+    const instance = createInstance({ isFi: false });
+    expect(instance.errorConfig.duplicate.msg).toBe('Duplicate entry, choose a different symbol.');
+  });
 });
-
-
-
-
-
