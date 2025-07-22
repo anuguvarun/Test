@@ -65,3 +65,30 @@ describe('YourComponent errorConfig getter', () => {
     expect(component.errorConfig.duplicate.msg).toBe('Duplicate entry, choose a different symbol.');
   });
 });
+
+
+
+
+setTimeout(() => {
+  const elementSpy = jest.spyOn(documentStub, 'getElementById');
+
+  const fakeElement = {
+    querySelector: jest.fn(),
+  };
+
+  const fakeFocusable = {
+    focus: jest.fn(),
+  };
+
+  // Stub getElementById to return fakeElement
+  documentStub.getElementById = jest.fn().mockReturnValue(fakeElement);
+
+  // Stub querySelector to return fakeFocusable
+  fakeElement.querySelector.mockReturnValue(fakeFocusable);
+
+  component.securityPriceSearchOnBlur(index);
+
+  expect(elementSpy).toHaveBeenCalledWith('actionToggle0');
+  expect(fakeElement.querySelector).toHaveBeenCalledWith('input, [tabindex]:not([tabindex="-1"])');
+  expect(fakeFocusable.focus).toHaveBeenCalled();
+});
