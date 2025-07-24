@@ -1,14 +1,13 @@
-const search = this.cards[index].get('search');
+private reapplyDuplicateValidators(): void {
+  this.cards.forEach((formGroup, i) => {
+    const control = formGroup.get('search');
+    if (!control) return;
 
-const existingValidator = search.validator; // This is the child's validators
-const duplicateValidator = duplicateSearchValidator(index, this.cards);
+    const existingValidator = control.validator;
+    const duplicateValidator = duplicateSearchValidator(i, this.cards);
+    const mergedValidator = Validators.compose([existingValidator, duplicateValidator]);
 
-// Merge them using compose
-const mergedValidator = Validators.compose([
-  existingValidator,
-  duplicateValidator
-]);
-
-search.setValidators(mergedValidator);
-search.markAsTouched();
-search.updateValueAndValidity({ onlySelf: true });
+    control.setValidators(mergedValidator);
+    control.updateValueAndValidity({ onlySelf: true });
+  });
+}
