@@ -2,13 +2,11 @@ duplicateSearch(index?: number): void {
   console.log('🔍 Running duplicateSearch for index:', index);
 
   const targets = typeof index === 'number'
-    ? [this.cards[index]]
-    : this.cards;
+    ? [[this.cards[index], index]] // pair: [group, index]
+    : this.cards.map((group, i) => [group, i]); // pair all
 
-  targets.forEach((group, i) => {
-    const actualIndex = typeof index === 'number' ? index : i;
+  targets.forEach(([group, actualIndex]) => {
     const search = group.get('search');
-
     if (search) {
       const existingValidator = search.validator;
       const duplicateValidator = duplicateSearchValidator(actualIndex, this.cards);
@@ -18,9 +16,8 @@ duplicateSearch(index?: number): void {
       validators.push(duplicateValidator);
 
       const mergedValidator = Validators.compose(validators);
-
       search.setValidators(mergedValidator);
-      search.updateValueAndValidity({ emitEvent: false }); // 🔥 Prevents recursion
+      search.updateValueAndValidity({ emitEvent: false });
     }
   });
 }
