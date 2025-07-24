@@ -1,17 +1,14 @@
-@Input() set triggerDuplicateCheck(val: any) {
-  if (val !== undefined && this.search && this.cards) {
-    // Call duplicate validator inline
-    const validator = duplicateSearchValidator(this.index, this.cards);
-    const error = validator(this.search);
+const search = this.cards[index].get('search');
 
-    // Merge or remove 'duplicate' error only
-    const currentErrors = this.search.errors || {};
+const existingValidator = search.validator; // This is the child's validators
+const duplicateValidator = duplicateSearchValidator(index, this.cards);
 
-    if (error?.duplicate) {
-      this.search.setErrors({ ...currentErrors, duplicate: true });
-    } else {
-      const { duplicate, ...rest } = currentErrors;
-      this.search.setErrors(Object.keys(rest).length ? rest : null);
-    }
-  }
-}
+// Merge them using compose
+const mergedValidator = Validators.compose([
+  existingValidator,
+  duplicateValidator
+]);
+
+search.setValidators(mergedValidator);
+search.markAsTouched();
+search.updateValueAndValidity({ onlySelf: true });
