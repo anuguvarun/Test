@@ -1,5 +1,8 @@
-@Input() set triggerValidationChange(value: any) {
-  if (value !== undefined) {
-    this.search?.updateValueAndValidity({ onlySelf: true });
-  }
+setupDuplicateSubscriptions(): void {
+  this.cards.forEach((formGroup, index) => {
+    const control = formGroup.get('search');
+    control?.valueChanges.subscribe(() => {
+      this.validationTrigger++; // Triggers all children to re-validate
+    });
+  });
 }
