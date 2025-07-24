@@ -10,3 +10,20 @@ refreshDuplicateValidators() {
     }
   });
 }
+
+
+addCard(): void {
+  this.tradeAdded.emit();
+
+  const form = this.presenter.createForm();
+  this.cards.push(form);
+
+  const searchControl = form.get('search');
+  if (searchControl) {
+    searchControl.valueChanges.subscribe(() => {
+      this.refreshDuplicateValidators();
+    });
+  }
+
+  this.removals = [];
+}
