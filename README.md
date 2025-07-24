@@ -1,12 +1,20 @@
 refreshDuplicateValidators() {
+  console.log('Refreshing...');
   this.cards.forEach((group, index) => {
     const search = group.get('search');
     if (search) {
-      const existingValidator = search.validator;
       const duplicateValidator = duplicateSearchValidator(index, this.cards);
-      const mergedValidator = Validators.compose([existingValidator, duplicateValidator]);
+      const existingValidator = search.validator;
+
+      const validators = [];
+      if (existingValidator) validators.push(existingValidator);
+      validators.push(duplicateValidator);
+
+      const mergedValidator = Validators.compose(validators);
       search.setValidators(mergedValidator);
-      search.updateValueAndValidity();
+
+      // Only validate silently
+      search.updateValueAndValidity({ emitEvent: false }); // 🔥 Prevents recursion
     }
   });
 }
