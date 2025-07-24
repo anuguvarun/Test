@@ -1,14 +1,15 @@
-@Input() set triggerValidationChange(value: any) {
-  if (value !== undefined && this.search && this.cards) {
-    // Create and run the duplicate validator directly
-    const duplicateError = duplicateSearchValidator(this.index, this.cards)(this.search);
+@Input() set triggerDuplicateCheck(val: any) {
+  if (val !== undefined && this.search && this.cards) {
+    // Call duplicate validator inline
+    const validator = duplicateSearchValidator(this.index, this.cards);
+    const error = validator(this.search);
 
+    // Merge or remove 'duplicate' error only
     const currentErrors = this.search.errors || {};
 
-    if (duplicateError) {
-      this.search.setErrors({ ...currentErrors, ...duplicateError });
+    if (error?.duplicate) {
+      this.search.setErrors({ ...currentErrors, duplicate: true });
     } else {
-      // remove only 'duplicate' error, keep the rest
       const { duplicate, ...rest } = currentErrors;
       this.search.setErrors(Object.keys(rest).length ? rest : null);
     }
