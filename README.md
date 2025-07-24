@@ -35,3 +35,19 @@ addCard(): void {
 
   this.removals = [];
 }
+
+
+export function duplicateSearchValidator(index: number, cards: FormGroup[]): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const currentValue = control.value?.trim()?.toLowerCase();
+    if (!currentValue) return null;
+
+    // Check if any previous card already has the same value
+    const isDuplicate = cards.slice(0, index).some(group => {
+      const value = group.get('search')?.value?.trim()?.toLowerCase();
+      return value === currentValue;
+    });
+
+    return isDuplicate ? { duplicate: true } : null;
+  };
+}
