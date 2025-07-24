@@ -1,9 +1,9 @@
-duplicateSearch(index: number): void {
-  this.cards.forEach((card, i) => {
+duplicateSearch(): void {
+  this.cards.forEach((card) => {
     const search = card.get('search');
     search.setValidators([
       Validators.required,
-      duplicateSearchValidator(i, this.cards),
+      duplicateSearchValidator(-1, this.cards), // index not needed anymore
     ]);
     search.updateValueAndValidity({ onlySelf: true });
   });
