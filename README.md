@@ -1,9 +1,9 @@
 duplicateSearch(index?: number): void {
   console.log('🔍 Running duplicateSearch for index:', index);
 
-  const targets = typeof index === 'number'
-    ? [[this.cards[index], index]] // pair: [group, index]
-    : this.cards.map((group, i) => [group, i]); // pair all
+  const targets: [FormGroup, number][] = typeof index === 'number'
+    ? [[this.cards[index], index]]
+    : this.cards.map((group, i) => [group, i]);
 
   targets.forEach(([group, actualIndex]) => {
     const search = group.get('search');
