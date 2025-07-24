@@ -3,7 +3,7 @@ duplicateSearch(): void {
     const search = card.get('search');
     search.setValidators([
       Validators.required,
-      duplicateSearchValidator(-1, this.cards), // index not needed anymore
+      duplicateSearchValidator(-1, this.cards), 
     ]);
     search.updateValueAndValidity({ onlySelf: true });
   });
