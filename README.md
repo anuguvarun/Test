@@ -1,22 +1,19 @@
-onConfirmRemove(index: number): void {
-  this.cards = this.cards.slice(0, index).concat(this.cards.slice(index + 1));
-  delete this.errors[index];
-  delete this.removals[index];
-  this.removeCard.emit(index);
+export function duplicateSearchValidator(index: number, cards: FormGroup[]): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const currentSearch = control.value?.trim()?.toLowerCase();
+    const currentTradeType = cards[index].get('tradeType')?.value;
 
-  if (this.cards.length === 0) {
-    this.addCard();
-  }
+    if (!currentSearch || !currentTradeType) return null;
 
-  this.calculateAdjustedBalance();
+    const isDuplicate = cards.some((group, i) => {
+      if (i === index) return false;
 
-  // Safely refresh validators for all cards
-  this.cards.forEach((card, idx) => {
-    const search = card.get('search');
-    if (search) {
-      search.setValidators(duplicateSearchValidator(idx, this.cards));
-      search.markAsTouched();
-      search.updateValueAndValidity();
-    }
-  });
+      const search = group.get('search')?.value?.trim()?.toLowerCase();
+      const tradeType = group.get('tradeType')?.value;
+
+      return search === currentSearch && tradeType === currentTradeType;
+    });
+
+    return isDuplicate ? { duplicate: true } : null;
+  };
 }
