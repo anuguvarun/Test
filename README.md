@@ -1,18 +1,13 @@
-private duplicateSubscriptions: Subscription[] = [];
+reapplyDuplicateValidators(): void {
+  this.cards.forEach((formGroup, index) => {
+    const search = formGroup.get('search');
+    if (!search) return;
 
-private setupDuplicateValueChangeSubscriptions(): void {
-  // Clean up old ones
-  this.duplicateSubscriptions.forEach(sub => sub.unsubscribe());
-  this.duplicateSubscriptions = [];
+    const existingValidator = search.validator;
+    const duplicateValidator = duplicateSearchValidator(index, this.cards);
+    const merged = Validators.compose([existingValidator, duplicateValidator]);
 
-  this.cards.forEach((formGroup, i) => {
-    const control = formGroup.get('search');
-    if (!control) return;
-
-    const sub = control.valueChanges.subscribe(() => {
-      this.reapplyDuplicateValidators(); // ✅ live re-check all
-    });
-
-    this.duplicateSubscriptions.push(sub);
+    search.setValidators(merged);
+    search.updateValueAndValidity({ onlySelf: true });
   });
 }
