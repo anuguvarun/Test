@@ -1,15 +1,22 @@
-import { Validators } from '@angular/forms'; // make sure this is imported
+onConfirmRemove(index: number): void {
+  this.cards = this.cards.slice(0, index).concat(this.cards.slice(index + 1));
+  delete this.errors[index];
+  delete this.removals[index];
+  this.removeCard.emit(index);
 
-duplicateSearch(index: number): void {
-  const search = this.cards[index].get('search');
-  if (!search) return;
+  if (this.cards.length === 0) {
+    this.addCard();
+  }
 
-  const composedValidator = Validators.compose([
-    search.validator,
-    duplicateSearchValidator(index, this.cards)
-  ]);
+  this.calculateAdjustedBalance();
 
-  search.setValidators(composedValidator);
-  search.markAsTouched();
-  search.updateValueAndValidity();
+  // Safely refresh validators for all cards
+  this.cards.forEach((card, idx) => {
+    const search = card.get('search');
+    if (search) {
+      search.setValidators(duplicateSearchValidator(idx, this.cards));
+      search.markAsTouched();
+      search.updateValueAndValidity();
+    }
+  });
 }
