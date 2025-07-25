@@ -1,13 +1,15 @@
-reapplyDuplicateValidators(): void {
-  this.cards.forEach((formGroup, index) => {
-    const search = formGroup.get('search');
-    if (!search) return;
+import { Validators } from '@angular/forms'; // make sure this is imported
 
-    const existingValidator = search.validator;
-    const duplicateValidator = duplicateSearchValidator(index, this.cards);
-    const merged = Validators.compose([existingValidator, duplicateValidator]);
+duplicateSearch(index: number): void {
+  const search = this.cards[index].get('search');
+  if (!search) return;
 
-    search.setValidators(merged);
-    search.updateValueAndValidity({ onlySelf: true });
-  });
+  const composedValidator = Validators.compose([
+    search.validator,
+    duplicateSearchValidator(index, this.cards)
+  ]);
+
+  search.setValidators(composedValidator);
+  search.markAsTouched();
+  search.updateValueAndValidity();
 }
