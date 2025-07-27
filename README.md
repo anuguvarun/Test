@@ -1,12 +1,22 @@
-export function duplicateSearchValidator(index: number, cards: FormGroup[]): ValidatorFn {
-  console.log('dup class cards', cards);
+import {
+  AbstractControl,
+  FormGroup,
+  ValidationErrors,
+  ValidatorFn,
+} from '@angular/forms';
 
+export function duplicateSearchValidator(
+  index: number,
+  cards: FormGroup[]
+): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
+    // Don't validate if not enough items to compare
+    if (cards.length <= 1) return null;
+
     const currentSearch = control.value?.trim()?.toLowerCase();
     const currentTradeType = cards[index].get('tradeType')?.value;
 
-    // When only one card, we still call the validator, but return no error.
-    if (cards.length <= 1 || !currentSearch || !currentTradeType) return null;
+    if (!currentSearch || !currentTradeType) return null;
 
     const isDuplicate = cards.some((group, i) => {
       if (i === index) return false;
@@ -17,8 +27,7 @@ export function duplicateSearchValidator(index: number, cards: FormGroup[]): Val
       return search === currentSearch && tradeType === currentTradeType;
     });
 
-    const xyz = isDuplicate ? { duplicate: true } : null;
-    console.log('xyz', xyz);
-    return xyz;
+    // ✅ Always return a new object or null — no caching!
+    return isDuplicate ? { duplicate: true } : null;
   };
 }
