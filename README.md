@@ -81,6 +81,18 @@ onConfirmRemove(index: number): void {
   this.rebuildSubscriptions(); // 👈 Add this helper function
 }
 
+private rebuildSubscriptions(): void {
+  // Clear any old subs just in case
+  this.cardSubscriptions.forEach(sub => sub.unsubscribe());
+  this.cardSubscriptions.clear();
+
+  this.cards.forEach(card => {
+    const sub = card.valueChanges.subscribe(() => {
+      this.triggerSiblingValidation(card);
+    });
+    this.cardSubscriptions.set(card, sub);
+  });
+}
 
 
 
