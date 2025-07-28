@@ -1,18 +1,23 @@
-refreshCardValidators(): void {
-  this.cards.forEach((card, index) => {
-    const search = card.get('search');
-    if (!search) return;
+function duplicateSearchValidator(getCards: () => FormGroup[]): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const cards = getCards();
+    const group = control.parent as FormGroup;
+    const index = cards.indexOf(group); // 👈 dynamic index
 
-    // Extract current validators (flattened)
-    const currentValidators = (search.validator ? [search.validator] : []);
+    if (!cards || index === -1) return null;
 
-    // Append updated duplicate validator
-    const duplicateValidator = duplicateSearchValidator(index, this.cards);
+    const currentSearch = control.value?.trim()?.toLowerCase();
+    const currentTradeType = cards[index].get('tradeType')?.value;
 
-    // Compose all validators again
-    const composed = Validators.compose([...currentValidators, duplicateValidator]);
+    if (!currentSearch || !currentTradeType) return null;
 
-    search.setValidators(composed);
-    search.updateValueAndValidity({ onlySelf: true });
-  });
+    const isDuplicate = cards.some((g, i) => {
+      if (i === index) return false;
+      const search = g.get('search')?.value?.trim()?.toLowerCase();
+      const tradeType = g.get('tradeType')?.value;
+      return search === currentSearch && tradeType === currentTradeType;
+    });
+
+    return isDuplicate ? { duplicate: true } : null;
+  };
 }
