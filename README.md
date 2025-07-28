@@ -55,3 +55,32 @@ addCard(): void {
 
 
 
+onConfirmRemove(index: number): void {
+  const removedCard = this.cards[index];
+
+  // 1. Unsubscribe from the removed card's valueChanges
+  const sub = this.cardSubscriptions.get(removedCard);
+  if (sub) {
+    sub.unsubscribe();
+    this.cardSubscriptions.delete(removedCard);
+  }
+
+  // 2. Update the cards array
+  this.cards = this.cards.slice(0, index).concat(this.cards.slice(index + 1));
+  delete this.errors[index];
+  delete this.removals[index];
+  this.removeCard.emit(index);
+
+  // 3. If empty, add a new card
+  if (this.cards.length === 0) {
+    this.addCard();
+  }
+
+  // 4. Recalculate balance and rewire subscriptions
+  this.calculateAdjustedBalance();
+  this.rebuildSubscriptions(); // 👈 Add this helper function
+}
+
+
+
+
