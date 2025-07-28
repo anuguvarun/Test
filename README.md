@@ -1,28 +1,11 @@
-setupDuplicateRevalidation() {
-  this.cards.forEach((group, i) => {
-    const searchControl = group.get('search');
-    const tradeTypeControl = group.get('tradeType');
+revalidation$ = new Subject<void>();
 
-    if (searchControl && !searchControl['_revalidationAttached']) {
-      searchControl.valueChanges.subscribe(() => {
-        this.cards.forEach((g, j) => {
-          if (i !== j) {
-            g.get('search')?.updateValueAndValidity({ onlySelf: true });
-          }
-        });
-      });
-      searchControl['_revalidationAttached'] = true;
-    }
+addCard(): void {
+  this.cards.push(this.presenter.createForm());
+  this.revalidation$.next(); // 🔁 triggers child to revalidate
+}
 
-    if (tradeTypeControl && !tradeTypeControl['_revalidationAttached']) {
-      tradeTypeControl.valueChanges.subscribe(() => {
-        this.cards.forEach((g, j) => {
-          if (i !== j) {
-            g.get('search')?.updateValueAndValidity({ onlySelf: true });
-          }
-        });
-      });
-      tradeTypeControl['_revalidationAttached'] = true;
-    }
-  });
+onRemove(index: number): void {
+  this.cards.splice(index, 1);
+  this.revalidation$.next(); // 🔁 triggers child to revalidate
 }
