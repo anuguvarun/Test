@@ -1,33 +1,39 @@
-function duplicateSearchValidator(getCards: () => FormGroup[]): ValidatorFn {
-  return (control: AbstractControl): ValidationErrors | null => {
-    const cards = getCards();
-    const group = control.parent as FormGroup;
-    const index = cards.indexOf(group);
-    if (!cards || index === -1) return null;
+private cardSubscriptions = new Map<FormGroup, Subscription>();
 
-    const currentSearch = control.value?.trim()?.toLowerCase();
-    const currentTradeType = group.get('tradeType')?.value;
-    if (!currentSearch || !currentTradeType) return null;
+addCard() {
+  const newCard = this.fb.group({
+    search: [''],
+    tradeType: [''],
+  });
 
-    // Find all indexes with same search + tradeType
-    const duplicates = cards
-      .map((g, i) => ({
-        index: i,
-        search: g.get('search')?.value?.trim()?.toLowerCase(),
-        tradeType: g.get('tradeType')?.value
-      }))
-      .filter(
-        item =>
-          item.search === currentSearch &&
-          item.tradeType === currentTradeType
-      )
-      .map(item => item.index);
+  this.cards.push(newCard);
 
-    // If current index is NOT the first in the list of duplicates => show error
-    if (duplicates.length > 1 && index !== duplicates[0]) {
-      return { duplicate: true };
+  // Set up valueChanges subscription
+  const sub = newCard.valueChanges.subscribe(() => {
+    this.triggerSiblingValidation(newCard);
+  });
+
+  this.cardSubscriptions.set(newCard, sub);
+}
+
+private triggerSiblingValidation(changedCard: FormGroup) {
+  this.cards.forEach((card) => {
+    if (card !== changedCard) {
+      card.get('search')?.updateValueAndValidity({ onlySelf: true });
     }
+  });
+}
 
-    return null;
-  };
+removeCard(index: number) {
+  const removedCard = this.cards[index];
+
+  // Unsubscribe to prevent memory leaks
+  const sub = this.cardSubscriptions.get(removedCard);
+  if (sub) {
+    sub.unsubscribe();
+    this.cardSubscriptions.delete(removedCard);
+  }
+
+  // Remove the card from the array
+  this.cards.splice(index, 1);
 }
