@@ -1,45 +1,28 @@
-private duplicateValidators: { [index: number]: ValidatorFn } = {};
+setupDuplicateRevalidation() {
+  this.cards.forEach((group, i) => {
+    const searchControl = group.get('search');
+    const tradeTypeControl = group.get('tradeType');
 
-duplicateSearch(index: number): void {
-  const search = this.cards[index].get('search');
-  if (!search) return;
+    if (searchControl && !searchControl['_revalidationAttached']) {
+      searchControl.valueChanges.subscribe(() => {
+        this.cards.forEach((g, j) => {
+          if (i !== j) {
+            g.get('search')?.updateValueAndValidity({ onlySelf: true });
+          }
+        });
+      });
+      searchControl['_revalidationAttached'] = true;
+    }
 
-  // Remove existing duplicate validator if present
-  let currentValidators = [];
-
-  if (search.validator) {
-    const validatorFn = search.validator as ValidatorFn;
-
-    // Decompose composed validators if needed
-    const tempControl = new FormControl();
-    tempControl.setValidators(validatorFn);
-    currentValidators = (tempControl.validator ? [tempControl.validator] : []);
-  }
-
-  // Create new duplicate validator and store
-  const newDuplicateValidator = duplicateSearchValidator(index, this.cards);
-  this.duplicateValidators[index] = newDuplicateValidator;
-
-  // Compose new list (you can filter existing ones if needed)
-  const validators = [
-    Validators.required,
-    newDuplicateValidator
-  ];
-
-  search.setValidators(validators);
-  search.updateValueAndValidity();
-}
-
-
-
-
-
-
-removeDuplicateValidator(index: number): void {
-  const search = this.cards[index].get('search');
-  if (!search) return;
-
-  search.setValidators(Validators.required); // or any other default set
-  search.updateValueAndValidity();
-  delete this.duplicateValidators[index];
+    if (tradeTypeControl && !tradeTypeControl['_revalidationAttached']) {
+      tradeTypeControl.valueChanges.subscribe(() => {
+        this.cards.forEach((g, j) => {
+          if (i !== j) {
+            g.get('search')?.updateValueAndValidity({ onlySelf: true });
+          }
+        });
+      });
+      tradeTypeControl['_revalidationAttached'] = true;
+    }
+  });
 }
