@@ -2,22 +2,32 @@ function duplicateSearchValidator(getCards: () => FormGroup[]): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     const cards = getCards();
     const group = control.parent as FormGroup;
-    const index = cards.indexOf(group); // 👈 dynamic index
-
+    const index = cards.indexOf(group);
     if (!cards || index === -1) return null;
 
     const currentSearch = control.value?.trim()?.toLowerCase();
-    const currentTradeType = cards[index].get('tradeType')?.value;
-
+    const currentTradeType = group.get('tradeType')?.value;
     if (!currentSearch || !currentTradeType) return null;
 
-    const isDuplicate = cards.some((g, i) => {
-      if (i === index) return false;
-      const search = g.get('search')?.value?.trim()?.toLowerCase();
-      const tradeType = g.get('tradeType')?.value;
-      return search === currentSearch && tradeType === currentTradeType;
-    });
+    // Find all indexes with same search + tradeType
+    const duplicates = cards
+      .map((g, i) => ({
+        index: i,
+        search: g.get('search')?.value?.trim()?.toLowerCase(),
+        tradeType: g.get('tradeType')?.value
+      }))
+      .filter(
+        item =>
+          item.search === currentSearch &&
+          item.tradeType === currentTradeType
+      )
+      .map(item => item.index);
 
-    return isDuplicate ? { duplicate: true } : null;
+    // If current index is NOT the first in the list of duplicates => show error
+    if (duplicates.length > 1 && index !== duplicates[0]) {
+      return { duplicate: true };
+    }
+
+    return null;
   };
 }
