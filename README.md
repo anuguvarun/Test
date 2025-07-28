@@ -35,5 +35,23 @@ removeCard(index: number) {
   }
 
   // Remove the card from the array
-  this.cards.splice(index, 1);
+  this.cards.splice(index, 
+
+
+addCard(): void {
+  this.tradeAdded.emit();
+
+  const newForm = this.presenter.createForm();
+  this.cards.push(newForm);
+  this.removals = [];
+
+  const sub = newForm.valueChanges.subscribe(() => {
+    this.triggerSiblingValidation(newForm);
+  });
+
+  this.cardSubscriptions.set(newForm, sub);
 }
+
+
+
+
