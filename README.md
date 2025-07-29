@@ -1,5 +1,5 @@
-import { FormControl, FormGroup, FormArray, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
-import { duplicateSearchValidator } from './your-validator-file'; // replace with actual path
+import { FormControl, FormGroup, FormArray, ValidatorFn, AbstractControl } from '@angular/forms';
+import { duplicateSearchValidator } from './your-validator-file'; // Replace with your actual file path
 
 describe('duplicateSearchValidator', () => {
   const buildCard = (search: string, tradeType: string): FormGroup =>
@@ -10,42 +10,48 @@ describe('duplicateSearchValidator', () => {
 
   const getCardsFactory = (cards: FormGroup[]) => () => cards;
 
-  const setup = (cards: FormGroup[], indexToTest: number, search: string, tradeType: string) => {
-    const targetCard = cards[indexToTest];
-    targetCard.get('search')?.setValue(search);
-    targetCard.get('tradeType')?.setValue(tradeType);
+  const setup = (cards: FormGroup[], indexToTest: number, newSearch: string, newTradeType: string) => {
+    const formArray = new FormArray(cards);
+    const group = formArray.at(indexToTest) as FormGroup;
+
+    group.get('search')?.setValue(newSearch);
+    group.get('tradeType')?.setValue(newTradeType);
+
     const validator = duplicateSearchValidator(getCardsFactory(cards));
-    return validator(targetCard.get('search')!);
+    return validator(group.get('search')!);
   };
 
-  it('should return null if cards are empty', () => {
+  it('should return null if cards list is empty', () => {
     const validator = duplicateSearchValidator(() => []);
-    const control = new FormControl('test');
-    expect(validator(control)).toBeNull();
+    const dummyControl = new FormControl('test');
+    expect(validator(dummyControl)).toBeNull();
   });
 
-  it('should return null if index not found in cards', () => {
-    const cards = [buildCard('a', 'type1')];
+  it('should return null if control.parent is not in cards', () => {
+    const cards = [buildCard('apple', 'buy')];
     const validator = duplicateSearchValidator(getCardsFactory(cards));
-    const control = new FormControl('test');
-    const group = new FormGroup({ search: control });
-    control.parent = group; // parent is different from any in `cards`
+
+    const orphanGroup = new FormGroup({
+      search: new FormControl('apple'),
+    });
+    const control = orphanGroup.get('search')!;
+
     expect(validator(control)).toBeNull();
   });
 
-  it('should return null if currentSearch is falsy', () => {
-    const cards = [buildCard('', 'type1')];
-    const result = setup(cards, 0, '', 'type1');
+  it('should return null if currentSearch is empty', () => {
+    const cards = [buildCard('', 'buy')];
+    const result = setup(cards, 0, '', 'buy');
     expect(result).toBeNull();
   });
 
-  it('should return null if currentTradeType is falsy', () => {
-    const cards = [buildCard('search', '')];
-    const result = setup(cards, 0, 'search', '');
+  it('should return null if currentTradeType is empty', () => {
+    const cards = [buildCard('apple', '')];
+    const result = setup(cards, 0, 'apple', '');
     expect(result).toBeNull();
   });
 
-  it('should return null if no duplicates are found', () => {
+  it('should return null if no duplicates exist', () => {
     const cards = [
       buildCard('apple', 'buy'),
       buildCard('banana', 'sell'),
@@ -54,16 +60,7 @@ describe('duplicateSearchValidator', () => {
     expect(result).toBeNull();
   });
 
-  it('should return error if duplicate is found (not first occurrence)', () => {
-    const cards = [
-      buildCard('apple', 'buy'),
-      buildCard('apple', 'buy'),
-    ];
-    const result = setup(cards, 1, 'apple', 'buy');
-    expect(result).toEqual({ duplicate: true });
-  });
-
-  it('should return null for the first occurrence of a duplicate', () => {
+  it('should return null for the first instance of a duplicate', () => {
     const cards = [
       buildCard('apple', 'buy'),
       buildCard('apple', 'buy'),
@@ -72,21 +69,39 @@ describe('duplicateSearchValidator', () => {
     expect(result).toBeNull();
   });
 
-  it('should treat search case-insensitively and trim whitespace', () => {
+  it('should return validation error for duplicate entry that is not the first', () => {
     const cards = [
-      buildCard(' Apple ', 'buy'),
+      buildCard('apple', 'buy'),
       buildCard('apple', 'buy'),
     ];
     const result = setup(cards, 1, 'apple', 'buy');
     expect(result).toEqual({ duplicate: true });
   });
 
-  it('should treat tradeType as case-sensitive (if expected)', () => {
+  it('should trim and lowercase the search value when checking for duplicates', () => {
+    const cards = [
+      buildCard('  Apple  ', 'buy'),
+      buildCard('apple', 'buy'),
+    ];
+    const result = setup(cards, 1, 'apple', 'buy');
+    expect(result).toEqual({ duplicate: true });
+  });
+
+  it('should treat tradeType as case-sensitive', () => {
     const cards = [
       buildCard('apple', 'BUY'),
       buildCard('apple', 'buy'),
     ];
     const result = setup(cards, 1, 'apple', 'buy');
-    expect(result).toBeNull(); // Only if tradeType is case-sensitive
+    expect(result).toBeNull(); // only if tradeType is case-sensitive
+  });
+
+  it('should handle different tradeType values with same search as unique', () => {
+    const cards = [
+      buildCard('apple', 'buy'),
+      buildCard('apple', 'sell'),
+    ];
+    const result = setup(cards, 1, 'apple', 'sell');
+    expect(result).toBeNull();
   });
 });
