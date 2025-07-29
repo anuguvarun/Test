@@ -1,20 +1,19 @@
-triggerDuplicateValidation(changedIndex: number) {
-  this.cards.controls.forEach((card, index) => {
-    if (index !== changedIndex) {
-      card.get('search')?.updateValueAndValidity({ onlySelf: true });
-      card.get('tradeType')?.updateValueAndValidity({ onlySelf: true });
-    }
-  });
+addCard(): void {
+  const newCard = this.presenter.createForm(); // no change here
+  this.cards.push(newCard);
+
+  const revalidateSiblings = () => {
+    this.cards.forEach(card => {
+      if (card !== newCard) {
+        card.get('search')?.updateValueAndValidity({ onlySelf: true });
+      }
+    });
+  };
+
+  newCard.get('search')?.setValidators(duplicateSearchValidator(() => this.cards));
+  newCard.get('search')?.updateValueAndValidity(); // ensure it runs once
+  newCard.get('search')?.valueChanges.subscribe(revalidateSiblings);
+  newCard.get('tradeType')?.valueChanges.subscribe(revalidateSiblings);
+
+  this.removals = [];
 }
-
-
-
-this.cards.controls.forEach((card: FormGroup, index: number) => {
-  card.get('search')?.valueChanges.subscribe(() => {
-    this.triggerDuplicateValidation(index);
-  });
-
-  card.get('tradeType')?.valueChanges.subscribe(() => {
-    this.triggerDuplicateValidation(index);
-  });
-});
