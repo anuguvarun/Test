@@ -1,12 +1,15 @@
-this.cards.forEach((card) => {
+this.cards.forEach((card, index, allCards) => {
   const search = card.get('search');
 
   if (search) {
-    search.valueChanges.subscribe((newValue) => {
-      // Highlight logic here
-      console.log('Search value changed to:', newValue);
-      // You can call `search.updateValueAndValidity()` if needed
-      search.updateValueAndValidity();
+    search.valueChanges.subscribe(() => {
+      // Update all cards' search controls — not just the one that changed
+      allCards.forEach((c) => {
+        const s = c.get('search');
+        if (s) {
+          s.updateValueAndValidity({ onlySelf: true, emitEvent: false });
+        }
+      });
     });
   }
 });
