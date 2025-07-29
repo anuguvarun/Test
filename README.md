@@ -2,14 +2,17 @@ addCard(): void {
   this.tradeAdded.emit();
 
   const newCard = this.presenter.createForm();
-  this.cards.push(newCard);  // cards is an array of FormGroup
+
+  // ✅ Add the validator here — now you can pass this.cards
+  newCard.get('search')?.setValidators([
+    duplicateSearchValidator(() => this.cards)
+  ]);
+  newCard.get('search')?.updateValueAndValidity(); // <- triggers it immediately
+
+  this.cards.push(newCard);
   this.removals = [];
 
-  // ✅ Revalidate siblings when this card's values change
-  const searchControl = newCard.get('search');
-  const tradeTypeControl = newCard.get('tradeType');
-
-  const triggerRevalidation = () => {
+  const triggerSiblings = () => {
     this.cards.forEach(card => {
       if (card !== newCard) {
         card.get('search')?.updateValueAndValidity({ onlySelf: true });
@@ -17,6 +20,6 @@ addCard(): void {
     });
   };
 
-  searchControl?.valueChanges.subscribe(triggerRevalidation);
-  tradeTypeControl?.valueChanges.subscribe(triggerRevalidation);
+  newCard.get('search')?.valueChanges.subscribe(triggerSiblings);
+  newCard.get('tradeType')?.valueChanges.subscribe(triggerSiblings);
 }
