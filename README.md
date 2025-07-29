@@ -1,25 +1,38 @@
+import { debounceTime, takeUntil, distinctUntilChanged } from 'rxjs/operators';
+
 this.cards.forEach((card, index, allCards) => {
   const search = card.get('search');
 
   if (search) {
-    // Attach the validator once
-    search.setValidators([duplicateSearchValidator(() => this.cards)]);
-
-    // Subscribe to changes
     search.valueChanges
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
-        // Trigger validator re-run
-        search.updateValueAndValidity({ onlySelf: true, emitEvent: false });
+      .pipe(
+        debounceTime(150),
+        distinctUntilChanged(),
+        takeUntil(this.destroy$)
+      )
+      .subscribe((value: string) => {
+        const normalized = value?.trim().toLowerCase();
+        const tradeType = card.get('tradeType')?.value;
 
-        // ✅ Use the validator result — no duplication
-        const hasDuplicateError = search.errors?.['duplicate'];
+        if (!normalized || !tradeType) return;
 
-        if (hasDuplicateError) {
-          console.log('clear (duplicate)');
-          search.updateValueAndValidity({ onlySelf: true, emitEvent: false });
+        // Check if duplicate exists
+        const duplicates = allCards.filter((c) => {
+          const s = c.get('search')?.value?.trim().toLowerCase();
+          const t = c.get('tradeType')?.value;
+          return s === normalized && t === tradeType;
+        });
 
-          // Optional: you can do more here, like notify user, disable button, etc.
+        if (duplicates.length > 1) {
+          console.log('Duplicate detected for:', normalized);
+
+          // Trigger update only for those involved
+          duplicates.forEach((c) => {
+            const s = c.get('search');
+            if (s) {
+              s.updateValueAndValidity({ onlySelf: true, emitEvent: false });
+            }
+          });
         }
       });
   }
