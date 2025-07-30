@@ -1,48 +1,62 @@
-get errorConfig() {
-  const searchPatternMsg = (() => {
-    if (this.search.value !== '' && this.search.value !== null) {
-      if (this.isFi) {
-        return { msg: 'Please enter 9 alphanumeric characters.' };
-      } else {
-        return { msg: 'Please enter from 2 to 5 alphanumeric characters.' };
-      }
-    }
-    return { msg: '' };
-  })();
+import { FormControl, FormGroup } from '@angular/forms';
+import { duplicateSearchValidator } from './your-validator-file'; // Update with actual file path
 
-  const securitySearchErrorMsg = (() => {
-    if (
-      this.search.value !== '' &&
-      this.search.value !== null &&
-      this.searchOptions?.length === 0
-    ) {
-      if (this.tradeType.value === this.tradeTypeEnum.MF) {
-        return { msg: 'Please enter valid Mutual Fund symbol.' };
-      } else if (this.tradeType.value === this.tradeTypeEnum.ETF) {
-        return { msg: 'Please enter valid ETF symbol.' };
-      } else {
-        return { msg: 'Security not found.' };
-      }
-    }
-    return { msg: '' };
-  })();
+describe('duplicateSearchValidator', () => {
+  let mockGetCards: jest.Mock;
 
-  return {
-    required: this.isFi
-      ? { msg: 'Please enter CUSIP.' }
-      : { msg: 'Please enter symbol.' },
+  beforeEach(() => {
+    mockGetCards = jest.fn();
+  });
 
-    searchPattern: searchPatternMsg,
+  function createForm(search: string | null, tradeType: string | null): FormGroup {
+    return new FormGroup({
+      search: new FormControl(search),
+      tradeType: new FormControl(tradeType),
+    });
+  }
 
-    securityResponse:
-      this.search.value !== '' && this.search.value !== null
-        ? { msg: 'Security not found.' }
-        : { msg: '' },
+  it('should return null if cards are empty', () => {
+    mockGetCards.mockReturnValue([]);
+    const control = new FormControl('test');
+    const validator = duplicateSearchValidator(mockGetCards);
+    expect(validator(control)).toBeNull();
+  });
 
-    securitySearchError: securitySearchErrorMsg,
+  it('should return null if group is not found in cards', () => {
+    const group = createForm('test', 'typeA');
+    mockGetCards.mockReturnValue([]);
+    const control = new FormControl('test');
+    control.setParent(group);
+    const validator = duplicateSearchValidator(mockGetCards);
+    expect(validator(control)).toBeNull();
+  });
 
-    duplicate: this.isFi
-      ? { msg: 'Duplicate entry, choose a different CUSIP.' }
-      : { msg: 'Duplicate entry, choose a different symbol.' },
-  };
-}
+  it('should return null if currentSearch or currentTradeType is missing', () => {
+    const group = createForm(null, null);
+    mockGetCards.mockReturnValue([group]);
+    const control = group.get('search')!;
+    const validator = duplicateSearchValidator(mockGetCards);
+    expect(validator(control)).toBeNull();
+  });
+
+  it('should return null if no duplicates are found', () => {
+    const group1 = createForm('test1', 'typeA');
+    const group2 = createForm('test2', 'typeB');
+    mockGetCards.mockReturnValue([group1, group2]);
+
+    const control = group1.get('search')!;
+    const validator = duplicateSearchValidator(mockGetCards);
+    expect(validator(control)).toBeNull();
+  });
+
+  it('should return { duplicate: true } if duplicate found', () => {
+    const group1 = createForm('duplicate', 'typeA');
+    const group2 = createForm('duplicate', 'typeA');
+
+    mockGetCards.mockReturnValue([group1, group2]);
+
+    const control = group1.get('search')!;
+    const validator = duplicateSearchValidator(mockGetCards);
+    expect(validator(control)).toEqual({ duplicate: true });
+  });
+});
