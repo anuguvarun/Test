@@ -1,33 +1,19 @@
-export function duplicateSearchValidator(getCards: () => FormGroup[]): ValidatorFn {
-  return (control: AbstractControl): ValidationErrors | null => {
-    const cards = getCards();
-    const group = control.parent as FormGroup;
-    const index = cards.indexOf(group);
+Object.values(this.form.controls).forEach((group: AbstractControl) => {
+  const searchControl = group.get('search');
+  const tradeTypeControl = group.get('tradeType');
 
-    if (!cards || index === -1) return null;
+  searchControl?.valueChanges.subscribe(() => {
+    this.triggerDuplicateValidation();
+  });
 
-    const currentSearch = control.value?.trim()?.toLowerCase();
-    const currentTradeType = group.get('tradeType')?.value;
+  tradeTypeControl?.valueChanges.subscribe(() => {
+    this.triggerDuplicateValidation();
+  });
+});
 
-    if (!currentSearch || !currentTradeType) return null;
-
-    // Count matching combinations
-    let duplicatesCount = 0;
-
-    cards.forEach((card, i) => {
-      const search = card.get('search')?.value?.trim()?.toLowerCase();
-      const tradeType = card.get('tradeType')?.value;
-
-      if (search === currentSearch && tradeType === currentTradeType) {
-        duplicatesCount++;
-      }
-    });
-
-    // Show error if there’s more than 1 match (i.e., duplicate found)
-    if (duplicatesCount > 1) {
-      return { duplicate: true };
-    }
-
-    return null;
-  };
+triggerDuplicateValidation() {
+  Object.values(this.form.controls).forEach((group: AbstractControl) => {
+    group.get('search')?.updateValueAndValidity({ onlySelf: true, emitEvent: false });
+    group.get('tradeType')?.updateValueAndValidity({ onlySelf: true, emitEvent: false });
+  });
 }
