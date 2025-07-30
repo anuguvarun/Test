@@ -1,39 +1,48 @@
-export function duplicateSearchValidator(getCards: () => FormGroup[]): ValidatorFn {
-  return (control: AbstractControl): ValidationErrors | null => {
-    const cards = getCards();
-    const group = control.parent as FormGroup;
-    if (!group || !cards) return null;
-
-    const currentSearch = group.get('search')?.value?.trim()?.toLowerCase();
-    const currentTradeType = group.get('tradeType')?.value;
-    if (!currentSearch || !currentTradeType) return null;
-
-    // Count matching combinations
-    let duplicates = 0;
-    cards.forEach(card => {
-      const search = card.get('search')?.value?.trim()?.toLowerCase();
-      const tradeType = card.get('tradeType')?.value;
-
-      if (search === currentSearch && tradeType === currentTradeType) {
-        duplicates++;
+get errorConfig() {
+  const searchPatternMsg = (() => {
+    if (this.search.value !== '' && this.search.value !== null) {
+      if (this.isFi) {
+        return { msg: 'Please enter 9 alphanumeric characters.' };
+      } else {
+        return { msg: 'Please enter from 2 to 5 alphanumeric characters.' };
       }
-    });
-
-    // Only set or remove 'duplicate' key, not whole error object
-    const existingErrors = control.errors || {};
-
-    if (duplicates > 1) {
-      return {
-        ...existingErrors,
-        duplicate: true
-      };
-    } else {
-      // Remove only the 'duplicate' key if it exists
-      if ('duplicate' in existingErrors) {
-        const { duplicate, ...rest } = existingErrors;
-        return Object.keys(rest).length ? rest : null;
-      }
-      return existingErrors; // Might be null or still have other errors
     }
+    return { msg: '' };
+  })();
+
+  const securitySearchErrorMsg = (() => {
+    if (
+      this.search.value !== '' &&
+      this.search.value !== null &&
+      this.searchOptions?.length === 0
+    ) {
+      if (this.tradeType.value === this.tradeTypeEnum.MF) {
+        return { msg: 'Please enter valid Mutual Fund symbol.' };
+      } else if (this.tradeType.value === this.tradeTypeEnum.ETF) {
+        return { msg: 'Please enter valid ETF symbol.' };
+      } else {
+        return { msg: 'Security not found.' };
+      }
+    }
+    return { msg: '' };
+  })();
+
+  return {
+    required: this.isFi
+      ? { msg: 'Please enter CUSIP.' }
+      : { msg: 'Please enter symbol.' },
+
+    searchPattern: searchPatternMsg,
+
+    securityResponse:
+      this.search.value !== '' && this.search.value !== null
+        ? { msg: 'Security not found.' }
+        : { msg: '' },
+
+    securitySearchError: securitySearchErrorMsg,
+
+    duplicate: this.isFi
+      ? { msg: 'Duplicate entry, choose a different CUSIP.' }
+      : { msg: 'Duplicate entry, choose a different symbol.' },
   };
 }
