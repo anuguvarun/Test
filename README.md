@@ -1,48 +1,33 @@
-get errorConfig() {
-  const searchPatternMsg = (() => {
-    if (this.search.value !== '' && this.search.value !== null) {
-      if (this.isFi) {
-        return { msg: 'Please enter 9 alphanumeric characters.' };
-      } else {
-        return { msg: 'Please enter from 2 to 5 alphanumeric characters.' };
+export function duplicateSearchValidator(getCards: () => FormGroup[]): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const cards = getCards();
+    const group = control.parent as FormGroup;
+    const index = cards.indexOf(group);
+
+    if (!cards || index === -1) return null;
+
+    const currentSearch = control.value?.trim()?.toLowerCase();
+    const currentTradeType = group.get('tradeType')?.value;
+
+    if (!currentSearch || !currentTradeType) return null;
+
+    // Count matching combinations
+    let duplicatesCount = 0;
+
+    cards.forEach((card, i) => {
+      const search = card.get('search')?.value?.trim()?.toLowerCase();
+      const tradeType = card.get('tradeType')?.value;
+
+      if (search === currentSearch && tradeType === currentTradeType) {
+        duplicatesCount++;
       }
+    });
+
+    // Show error if there’s more than 1 match (i.e., duplicate found)
+    if (duplicatesCount > 1) {
+      return { duplicate: true };
     }
-    return { msg: '' };
-  })();
 
-  const securitySearchErrorMsg = (() => {
-    if (
-      this.search.value !== '' &&
-      this.search.value !== null &&
-      this.searchOptions?.length === 0
-    ) {
-      if (this.tradeType.value === this.tradeTypeEnum.MF) {
-        return { msg: 'Please enter valid Mutual Fund symbol.' };
-      } else if (this.tradeType.value === this.tradeTypeEnum.ETF) {
-        return { msg: 'Please enter valid ETF symbol.' };
-      } else {
-        return { msg: 'Security not found.' };
-      }
-    }
-    return { msg: '' };
-  })();
-
-  return {
-    required: this.isFi
-      ? { msg: 'Please enter CUSIP.' }
-      : { msg: 'Please enter symbol.' },
-
-    searchPattern: searchPatternMsg,
-
-    securityResponse:
-      this.search.value !== '' && this.search.value !== null
-        ? { msg: 'Security not found.' }
-        : { msg: '' },
-
-    securitySearchError: securitySearchErrorMsg,
-
-    duplicate: this.isFi
-      ? { msg: 'Duplicate entry, choose a different CUSIP.' }
-      : { msg: 'Duplicate entry, choose a different symbol.' },
+    return null;
   };
 }
