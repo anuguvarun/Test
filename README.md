@@ -1,22 +1,36 @@
-const formattedSearchValue = this.search.value?.toUpperCase();
+lastEmittedValue: string = '';
+lastEmitSource: 'input' | 'blur' | null = null;
 
-let matched = false;
-let matchedValue = formattedSearchValue;
-
-if (this.searchOptions.length > 0) {
-  const secData = this.searchOptions.find(
-    (security) => security.value.toUpperCase() === formattedSearchValue
-  );
-  if (secData) {
-    matched = true;
-    matchedValue = secData.value;
-  } else {
-    this.search.setErrors({ securityResponse: true });
+onInput(value: string) {
+  const trimmedValue = value.trim();
+  if (trimmedValue && trimmedValue !== this.lastEmittedValue) {
+    this.onSearchEmit(trimmedValue, 'input');
   }
 }
 
-// 🔥 Always emit the blur action, whether matched or not
-this.onSearchSelectEmit({
-  value: matchedValue,
-  fromDropdown: matched
-});
+onBlur() {
+  const value = this.search.value?.trim();
+
+  if (!value) return;
+
+  if (this.search.errors?.duplicate) {
+    // Wait for duplicate error to be cleared
+    const interval = setInterval(() => {
+      if (!this.search.errors?.duplicate) {
+        clearInterval(interval);
+
+        // Only call if input didn’t just call it
+        if (this.lastEmittedValue !== value) {
+          this.onSearchEmit(value, 'blur');
+        }
+      }
+    }, 100);
+
+    setTimeout(() => clearInterval(interval), 3000); // safety stop
+  } else {
+    // Also prevent double call here
+    if (this.lastEmittedValue !== value) {
+      this.onSearchEmit(value, 'blur');
+    }
+  }
+}
