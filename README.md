@@ -1,35 +1,40 @@
-lastEmittedValue: string = '';
+import { Subscription } from 'rxjs';
 
-onInput(value: string) {
-  const trimmedValue = value.trim();
+export class YourComponent {
+  @Input() search: FormGroup;
 
-  if (trimmedValue && trimmedValue !== this.lastEmittedValue) {
-    this.lastEmittedValue = trimmedValue;  // 🧠 Update last value
-    this.searchService.call(trimmedValue).subscribe(...);  // 💥 Service call
-  }
-}
+  private previousDuplicateError = false;
+  private duplicateErrorSub?: Subscription;
 
-onBlur() {
-  const value = this.search.value?.trim();
-  if (!value) return;
+  securityPriceSearchOnBlur(index: number): void {
+    console.log('inside onBlur');
 
-  const triggerEmit = () => {
-    if (value !== this.lastEmittedValue) {
-      this.lastEmittedValue = value;  // 🧠 Update last value
-      this.searchService.call(value).subscribe(...);  // 💥 Service call
-    }
-  };
-
-  if (this.search.errors?.duplicate) {
-    const interval = setInterval(() => {
-      if (!this.search.errors?.duplicate) {
-        clearInterval(interval);
-        triggerEmit();  // only after error clears
+    if (this.tradeType.value === this.tradeTypeEnum.FI && this.search.value) {
+      
+      // If already subscribed, skip (or unsubscribe first if needed)
+      if (this.duplicateErrorSub) {
+        this.duplicateErrorSub.unsubscribe(); // Optional cleanup
       }
-    }, 100);
 
-    setTimeout(() => clearInterval(interval), 3000);
-  } else {
-    triggerEmit();  // no error, call immediately if needed
+      this.duplicateErrorSub = this.search.statusChanges.subscribe(() => {
+        const duplicateError = this.search.errors?.['duplicate'] ?? false;
+
+        if (this.previousDuplicateError && !duplicateError) {
+          this.onSearchEmit(); // Your function call
+        }
+
+        this.previousDuplicateError = duplicateError;
+      });
+    }
+  }
+
+  onSearchEmit() {
+    console.log('Duplicate error cleared — emitting search');
+    // Your logic here
+  }
+
+  ngOnDestroy(): void {
+    // Cleanup to avoid memory leaks
+    this.duplicateErrorSub?.unsubscribe();
   }
 }
