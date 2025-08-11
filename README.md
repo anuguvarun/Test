@@ -1,5 +1,5 @@
 getError() {
-  const val = this.search?.value ?? '';
+  const val = this.search?.value;
 
   // 1) required
   if (!val) {
@@ -9,52 +9,32 @@ getError() {
     };
   }
 
-  // 2) search pattern length checks (priority before duplicate)
-  if (this.isFi) {
-    if (val.length !== 9) {
-      return {
-        key: 'searchPattern',
-        msg: 'Please enter 9 alphanumeric characters.'
-      };
-    }
-  } else {
-    if (val.length < 2 || val.length > 5) {
-      return {
-        key: 'searchPattern',
-        msg: 'Please enter from 2 to 5 alphanumeric characters.'
-      };
+  // 2) search pattern message (your existing logic)
+  if (val !== '' && val != null) {
+    if (this.isFi) {
+      return { key: 'searchPattern', msg: 'Please enter 9 alphanumeric characters.' };
+    } else {
+      return { key: 'searchPattern', msg: 'Please enter from 2 to 5 alphanumeric characters.' };
     }
   }
 
-  // 3) security search result errors
-  const noOptions =
-    !Array.isArray(this.searchOptions) || this.searchOptions.length === 0;
-
-  if (noOptions) {
+  // 3) security search errors (your existing logic)
+  if (
+    val !== '' &&
+    val != null &&
+    this.searchOptions?.length === 0
+  ) {
     if (this.tradeType?.value === this.tradeTypeEnum.MF) {
       return { key: 'security', msg: 'Please enter valid Mutual Fund symbol.' };
-    }
-    if (this.tradeType?.value === this.tradeTypeEnum.ETF) {
+    } else if (this.tradeType?.value === this.tradeTypeEnum.ETF) {
       return { key: 'security', msg: 'Please enter valid ETF symbol.' };
+    } else {
+      return { key: 'security', msg: 'Security not found.' };
     }
-    return { key: 'security', msg: 'Security not found.' };
   }
 
-  // 4) duplicate (only if all the above passed)
-  const isDup =
-    typeof this.isDuplicate === 'function'
-      ? this.isDuplicate(val)
-      : !!this.duplicate; // adapt to your existing flag
-
-  if (isDup) {
-    return {
-      key: 'duplicate',
-      msg: this.isFi
-        ? 'Duplicate entry, choose a different CUSIP.'
-        : 'Duplicate entry, choose a different symbol.'
-    };
-  }
-
-  // ✅ no error
-  return null;
+  // 4) duplicate (last priority)
+  return this.isFi
+    ? { key: 'duplicate', msg: 'Duplicate entry, choose a different CUSIP.' }
+    : { key: 'duplicate', msg: 'Duplicate entry, choose a different symbol.' };
 }
