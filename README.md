@@ -1,72 +1,105 @@
-import { FormGroup, FormControl } from '@angular/forms';
-import { MyComponent } from './my-component';  // Adjust import accordingly
+// request-trade.component.spec.ts
+import { FormControl, FormGroup, AbstractControl } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { RequestTradeComponent } from './request-trade.component';
 
-describe('MyComponent', () => {
-  let component: MyComponent;
+describe('RequestTradeComponent – highlighted search subscriptions', () => {
+  let component: RequestTradeComponent;
+
+  const makeGroup = () =>
+    new FormGroup({
+      search: new FormControl<string | null>(''),
+    });
 
   beforeEach(() => {
-    component = new MyComponent();
+    component = new RequestTradeComponent(
+      {} as any, // presenter
+      {} as any, // modalService
+      {} as any, // orderStepPresenter
+      {} as any, // analyticsService
+      {} as any  // router
+    );
 
-    // Mock cards with FormGroups and search FormControls
-    component.cards = {
-      card1: new FormGroup({
-        search: new FormControl('value1')
-      }),
-      card2: new FormGroup({
-        search: new FormControl('value2')
-      }),
-      card3: new FormGroup({
-        search: new FormControl('value1')  // duplicate value to simulate validation error
-      })
-    };
+    // ensure these exist for the code under test
+    (component as any).destroy$ = new Subject<void>();
+    (component as any).subscribedControls = new Set<AbstractControl>();
+
+    // avoid unrelated addCard() branch on first line of ngOnChanges
+    (component as any).accounts = [];
+    (component as any).cards = {} as any;
   });
 
-  it('should call updateValueAndValidity for controls with duplicate errors', () => {
-    // Set duplicate errors manually to simulate validation
-    component.cards.card1.get('search')?.setErrors({ duplicate: true });
-    component.cards.card2.get('search')?.setErrors(null);  // no error
-    component.cards.card3.get('search')?.setErrors({ duplicate: true });
+  // Call the real method; no wrappers
+  const runNgOnChanges = () => (component as any).ngOnChanges({} as any);
 
-    const updateSpy1 = jest.spyOn(component.cards.card1.get('search')!, 'updateValueAndValidity');
-    const updateSpy2 = jest.spyOn(component.cards.card2.get('search')!, 'updateValueAndValidity');
-    const updateSpy3 = jest.spyOn(component.cards.card3.get('search')!, 'updateValueAndValidity');
+  it('subscribes to each group.search once and stores the control', () => {
+    const g1 = makeGroup();
+    const g2 = makeGroup();
+    (component as any).cards = { a: g1, b: g2 };
 
-    component.refreshDuplicateValidation();
+    const spy1 = jest.spyOn(g1.get('search')!.valueChanges, 'subscribe');
+    const spy2 = jest.spyOn(g2.get('search')!.valueChanges, 'subscribe');
 
-    expect(updateSpy1).toHaveBeenCalledWith({ onlySelf: true, emitEvent: false });
-    expect(updateSpy2).not.toHaveBeenCalled();  // No duplicate error, shouldn't be called
-    expect(updateSpy3).toHaveBeenCalledWith({ onlySelf: true, emitEvent: false });
+    runNgOnChanges();
+
+    expect(spy1).toHaveBeenCalledTimes(1);
+    expect(spy2).toHaveBeenCalledTimes(1);
+    expect((component as any).subscribedControls.has(g1.get('search')!)).toBe(true);
+    expect((component as any).subscribedControls.has(g2.get('search')!)).toBe(true);
   });
 
-  it('should not call updateValueAndValidity if no controls have duplicate errors', () => {
-    component.cards.card1.get('search')?.setErrors(null);
-    component.cards.card2.get('search')?.setErrors(null);
-    component.cards.card3.get('search')?.setErrors(null);
+  it('does not resubscribe when ngOnChanges runs again (Set prevents dupes)', () => {
+    const g = makeGroup();
+    (component as any).cards = { a: g };
 
-    const updateSpy1 = jest.spyOn(component.cards.card1.get('search')!, 'updateValueAndValidity');
-    const updateSpy2 = jest.spyOn(component.cards.card2.get('search')!, 'updateValueAndValidity');
-    const updateSpy3 = jest.spyOn(component.cards.card3.get('search')!, 'updateValueAndValidity');
+    const subscribeSpy = jest.spyOn(g.get('search')!.valueChanges, 'subscribe');
 
-    component.refreshDuplicateValidation();
+    runNgOnChanges(); // first pass wires it
+    runNgOnChanges(); // second pass should skip (already in Set)
 
-    expect(updateSpy1).not.toHaveBeenCalled();
-    expect(updateSpy2).not.toHaveBeenCalled();
-    expect(updateSpy3).not.toHaveBeenCalled();
+    expect(subscribeSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('should safely handle if search control is missing in a group', () => {
-    // Remove search control from one card to simulate missing control
-    component.cards.card2.removeControl('search');
+  it('calls refreshDuplicateValidation on search value changes', () => {
+    const g = makeGroup();
+    (component as any).cards = { a: g };
 
-    const updateSpy1 = jest.spyOn(component.cards.card1.get('search')!, 'updateValueAndValidity');
-    const updateSpy3 = jest.spyOn(component.cards.card3.get('search')!, 'updateValueAndValidity');
+    const refreshSpy = jest.spyOn(component as any, 'refreshDuplicateValidation');
 
-    component.cards.card1.get('search')?.setErrors({ duplicate: true });
-    component.cards.card3.get('search')?.setErrors({ duplicate: true });
+    runNgOnChanges();
 
-    component.refreshDuplicateValidation();
+    g.get('search')!.setValue('abc');
+    g.get('search')!.setValue('def');
 
-    expect(updateSpy1).toHaveBeenCalledWith({ onlySelf: true, emitEvent: false });
-    expect(updateSpy3).toHaveBeenCalledWith({ onlySelf: true, emitEvent: false });
+    expect(refreshSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('stops reacting after destroy$ emits (takeUntil)', () => {
+    const g = makeGroup();
+    (component as any).cards = { a: g };
+
+    const refreshSpy = jest.spyOn(component as any, 'refreshDuplicateValidation');
+
+    runNgOnChanges();
+
+    g.get('search')!.setValue('first');
+    expect(refreshSpy).toHaveBeenCalledTimes(1);
+
+    (component as any).destroy$.next();
+    (component as any).destroy$.complete?.();
+
+    g.get('search')!.setValue('second');
+    g.get('search')!.setValue('third');
+
+    expect(refreshSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores groups without a "search" control', () => {
+    const noSearch = new FormGroup({ other: new FormControl(1) });
+    (component as any).cards = { a: noSearch };
+
+    runNgOnChanges();
+
+    expect((component as any).subscribedControls.size).toBe(0);
   });
 });
