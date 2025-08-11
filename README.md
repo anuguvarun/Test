@@ -1,6 +1,5 @@
 getError() {
-  const val = (this.search?.value ?? '').trim();
-  const alnum = /^[a-z0-9]+$/i;
+  const val = this.search?.value ?? '';
 
   // 1) required
   if (!val) {
@@ -10,18 +9,16 @@ getError() {
     };
   }
 
-  // 2) search pattern (always before duplicate)
+  // 2) search pattern length checks (priority before duplicate)
   if (this.isFi) {
-    const ok = alnum.test(val) && val.length === 9;
-    if (!ok) {
+    if (val.length !== 9) {
       return {
         key: 'searchPattern',
         msg: 'Please enter 9 alphanumeric characters.'
       };
     }
   } else {
-    const ok = alnum.test(val) && val.length >= 2 && val.length <= 5;
-    if (!ok) {
+    if (val.length < 2 || val.length > 5) {
       return {
         key: 'searchPattern',
         msg: 'Please enter from 2 to 5 alphanumeric characters.'
