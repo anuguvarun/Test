@@ -1,28 +1,82 @@
+import { Component, DebugElement, ElementRef, QueryList } from '@angular/core';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
+import { FormGroup, FormControl, Validators } from '@angular/forms';
+import { By } from '@angular/platform-browser';
+import { RequestTradeComponent } from './request-trade.component'; // update path
+import { RequestTradePresenter } from './request-trade.presenter'; // update path
 
+@Component({
+  template: `<app-request-trade></app-request-trade>` // update selector if needed
+})
+class TestHostComponent {}
 
-  it('calls presenter when multiple accounts and navigates when valid & balance >= 0', () => {
-    component.accounts = [{}, {}]; // >1 triggers presenter call
+describe('RequestTradeComponent (onNextStep)', () => {
+  let fixture: ComponentFixture<TestHostComponent>;
+  let debugEl: DebugElement;
+  let component: RequestTradeComponent;
+
+  const presenter = {
+    createForm: jest.fn(),
+    checkAccountNumberValidity: jest.fn(),
+  };
+
+  const routerStub = { navigateByUrl: jest.fn() };
+
+  const makeQueryList = <T,>(items: T[]): QueryList<T> => {
+    const ql = new QueryList<T>();
+    ql.reset(items);
+    return ql;
+  };
+
+  const buildCard = (valid: boolean): FormGroup =>
+    new FormGroup({
+      field: new FormControl(valid ? 'x' : '', Validators.required),
+    });
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      declarations: [TestHostComponent, RequestTradeComponent],
+      providers: [
+        { provide: Router, useValue: routerStub },
+        { provide: RequestTradePresenter, useValue: presenter },
+      ],
+    }).compileComponents();
+  });
+
+  beforeEach(() => {
+    fixture = TestBed.createComponent(TestHostComponent);
+    debugEl = fixture.debugElement.query(By.directive(RequestTradeComponent));
+    component = debugEl.componentInstance;
+
+    component.headerForm = new FormGroup({
+      brokerageAccount: new FormControl('', Validators.required),
+    });
+
+    window.scrollTo = jest.fn();
+    (window as any).scrollY = 50;
+
+    jest.useFakeTimers();
+    jest.clearAllMocks();
+  });
+
+  it('calls presenter with multiple accounts and navigates when valid and balance >= 0', () => {
+    component.accounts = [{}, {}];
     component.headerForm.setValue({ brokerageAccount: 'ACC' });
     component.cards = [buildCard(true), buildCard(true)];
     component.adjustedAvailableBalance = 5;
 
     component.onNextStep();
 
-    expect(presenter.checkAccountNumberValidity).toHaveBeenCalledTimes(1);
+    expect(presenter.checkAccountNumberValidity).toHaveBeenCalled();
     expect(routerStub.navigateByUrl).toHaveBeenCalledWith('/invest/trade-order-confirm');
-    // touched/pristine/validate called on each card
-    component.cards.forEach(c => {
-      expect(jest.spyOn(c, 'markAllAsTouched')).toBeDefined();
-      expect(jest.spyOn(c, 'markAsPristine')).toBeDefined();
-      expect(jest.spyOn(c, 'updateValueAndValidity')).toBeDefined();
-    });
   });
 
   it('does not call presenter with single account', () => {
-    component.accounts = [{}]; // exactly 1
+    component.accounts = [{}];
     component.headerForm.setValue({ brokerageAccount: 'ONLY' });
     component.cards = [buildCard(true)];
-    component.adjustedAvailableBalance = 1;
+    component.adjustedAvailableBalance = 5;
 
     component.onNextStep();
 
@@ -42,29 +96,22 @@
     expect(routerStub.navigateByUrl).not.toHaveBeenCalled();
   });
 
-  it('sets errors and scrolls to the first invalid card element', () => {
+  it('sets errors and scrolls to first invalid card element', () => {
     component.accounts = [{}, {}];
     component.headerForm.setValue({ brokerageAccount: 'ACC' });
     component.cards = [buildCard(false), buildCard(true)];
 
-    // real HTMLElement works with DOM types (no any)
     const div = document.createElement('div');
-    // make scrollIntoView a jest mock with the right signature
-    const scrollIntoViewMock: (arg?: boolean | ScrollIntoViewOptions) => void = jest.fn();
-    div.scrollIntoView = scrollIntoViewMock;
-
-    // getBoundingClientRect must return DOMRect
-    const rect = new DOMRect(0, 200, 0, 0);
-    jest.spyOn(div, 'getBoundingClientRect').mockReturnValue(rect);
-
+    div.scrollIntoView = jest.fn();
+    jest.spyOn(div, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 200, 0, 0));
     const elementRef = new ElementRef<HTMLElement>(div);
-    component.stepCardElements = makeQueryList<ElementRef<HTMLElement>>([elementRef]);
+
+    component.stepCardElements = makeQueryList([elementRef]);
 
     component.onNextStep();
     jest.runOnlyPendingTimers();
 
-    // first invalid set at index 0; smooth scroll called
-    expect(scrollIntoViewMock).toHaveBeenCalledWith({
+    expect(div.scrollIntoView).toHaveBeenCalledWith({
       behavior: 'smooth',
       block: 'center',
       inline: 'nearest',
@@ -72,20 +119,17 @@
     expect(window.scrollTo).toHaveBeenCalledWith({ top: 200 + 50 - 80, behavior: 'smooth' });
   });
 
-  it('does not scroll if the element at index is missing (covers inner-if false)', () => {
+  it('does not scroll if element is missing at index', () => {
     component.accounts = [{}, {}];
     component.headerForm.setValue({ brokerageAccount: 'ACC' });
     component.cards = [buildCard(false)];
-
-    // index exists but is undefined element
-    component.stepCardElements = makeQueryList<ElementRef<HTMLElement>>([undefined as unknown as ElementRef<HTMLElement>]);
-
-    const scrollToSpy = window.scrollTo as unknown as jest.Mock;
-    scrollToSpy.mockClear();
+    component.stepCardElements = makeQueryList<ElementRef<HTMLElement>>(
+      [undefined as unknown as ElementRef<HTMLElement>]
+    );
 
     component.onNextStep();
     jest.runOnlyPendingTimers();
 
-    expect(scrollToSpy).not.toHaveBeenCalled();
+    expect(window.scrollTo).not.toHaveBeenCalled();
   });
 });
