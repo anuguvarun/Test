@@ -1,40 +1,72 @@
-getError() {
-  const val = this.search?.value;
+getErrorConfig() {
+  const val = this.search && this.search.value != null ? this.search.value : '';
 
-  // 1) required
+  // required
+  const required = {};
   if (!val) {
-    return {
-      key: 'required',
-      msg: this.isFi ? 'Please enter CUSIP.' : 'Please enter symbol.'
-    };
+    required.msg = this.isFi ? 'Please enter CUSIP.' : 'Please enter symbol.';
+  } else {
+    required.msg = '';
   }
 
-  // 2) search pattern message (your existing logic)
+  // search pattern (original logic)
+  const searchPattern = {};
   if (val !== '' && val != null) {
     if (this.isFi) {
-      return { key: 'searchPattern', msg: 'Please enter 9 alphanumeric characters.' };
+      searchPattern.msg = 'Please enter 9 alphanumeric characters.';
     } else {
-      return { key: 'searchPattern', msg: 'Please enter from 2 to 5 alphanumeric characters.' };
+      searchPattern.msg = 'Please enter from 2 to 5 alphanumeric characters.';
     }
+  } else {
+    searchPattern.msg = '';
   }
 
-  // 3) security search errors (your existing logic)
+  // security search errors (original logic, no ternary, no Array.isArray)
+  const securitySearchErrors = {};
   if (
     val !== '' &&
     val != null &&
     this.searchOptions?.length === 0
   ) {
-    if (this.tradeType?.value === this.tradeTypeEnum.MF) {
-      return { key: 'security', msg: 'Please enter valid Mutual Fund symbol.' };
-    } else if (this.tradeType?.value === this.tradeTypeEnum.ETF) {
-      return { key: 'security', msg: 'Please enter valid ETF symbol.' };
+    if (this.tradeType && this.tradeType.value === this.tradeTypeEnum.MF) {
+      securitySearchErrors.msg = 'Please enter valid Mutual Fund symbol.';
+    } else if (this.tradeType && this.tradeType.value === this.tradeTypeEnum.ETF) {
+      securitySearchErrors.msg = 'Please enter valid ETF symbol.';
     } else {
-      return { key: 'security', msg: 'Security not found.' };
+      securitySearchErrors.msg = 'Security not found.';
     }
+  } else {
+    securitySearchErrors.msg = '';
   }
 
-  // 4) duplicate (last priority)
-  return this.isFi
-    ? { key: 'duplicate', msg: 'Duplicate entry, choose a different CUSIP.' }
-    : { key: 'duplicate', msg: 'Duplicate entry, choose a different symbol.' };
+  // securityResponse (unchanged)
+  const securityResponse = {};
+  if (val !== '' && val != null) {
+    securityResponse.msg = 'Security not found.';
+  } else {
+    securityResponse.msg = '';
+  }
+
+  // duplicate (only if no search pattern or security search errors)
+  const duplicate = {};
+  if (
+    !searchPattern.msg &&
+    !securitySearchErrors.msg
+  ) {
+    if (this.isFi) {
+      duplicate.msg = 'Duplicate entry, choose a different CUSIP.';
+    } else {
+      duplicate.msg = 'Duplicate entry, choose a different symbol.';
+    }
+  } else {
+    duplicate.msg = '';
+  }
+
+  return {
+    required,
+    searchPattern,
+    securityResponse,
+    securitySearchErrors,
+    duplicate
+  };
 }
