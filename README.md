@@ -1,81 +1,103 @@
-import { Subject } from 'rxjs';
-import { RequestTradeComponent } from './request-trade.component';
-import { stubCard } from './path-to-your-stub-card-file'; // adjust import
+import { FormGroup, FormControl, Validators } from '@angular/forms';
+import { QueryList, EventEmitter } from '@angular/core';
+import { YourComponent } from './your-component-file'; // adjust import
 
-describe('RequestTradeComponent – highlighted search subscriptions', () => {
-  let component: RequestTradeComponent;
+const makeQueryList = <T,>(arr: T[]): QueryList<T> => {
+  const ql = new QueryList<T>();
+  (ql as any).reset(arr);
+  (ql as any)._notifyOnChanges();
+  return ql;
+};
+
+describe('onNextStep', () => {
+  let component: YourComponent;
+  let routerStub: any;
+  let presenterStub: any;
 
   beforeEach(() => {
-    component = new RequestTradeComponent(
-      {} as any, // presenter
-      {} as any, // modalService
-      {} as any, // orderStepPresenter
-      {} as any, // analyticsService
-      {} as any  // router
-    );
-    (component as any).destroy$ = new Subject<void>();
-    (component as any).subscribedControls = new Set<any>();
-    (component as any).accounts = [];
-    (component as any).cards = {} as any;
+    routerStub = { navigateByUrl: jest.fn() };
+    presenterStub = { checkAccountNumberValidity: jest.fn() };
+
+    component = new YourComponent(presenterStub, routerStub); // adapt to your constructor
+    component.stepDataSubmitted = new EventEmitter<any>();
+
+    // mock window scrolling
+    (global as any).window.scrollY = 50;
+    (global as any).window.scrollTo = jest.fn();
+    jest.useFakeTimers();
   });
 
-  const runNgOnChanges = () => (component as any).ngOnChanges({} as any);
+  const mkCard = (valid: boolean) => {
+    const fg = new FormGroup({ ctrl: new FormControl(valid ? 'x' : '') });
+    Object.defineProperties(fg, { valid: { get: () => valid } });
+    (fg as any).markAllAsTouched = jest.fn();
+    (fg as any).markAsPristine = jest.fn();
+    (fg as any).updateValueAndValidity = jest.fn();
+    return fg;
+  };
 
-  it('subscribes to each stubCard search control', () => {
-    const card1 = stubCard('Buy', 'Action1', 'Share1', 500);
-    const card2 = stubCard('Sell', 'Action2', 'Share2', 1000);
+  it('calls presenter with multiple accounts and navigates when valid', () => {
+    component.accounts = [{}, {}];
+    component.headerForm = new FormGroup({ brokerageAccount: new FormControl('ACC', Validators.required) });
+    component.cards = [mkCard(true)];
+    component.adjustedAvailableBalance = 10;
 
-    (component as any).cards = { a: card1, b: card2 };
+    component.onNextStep();
 
-    const spy1 = jest.spyOn(card1.get('search')!.valueChanges, 'subscribe');
-    const spy2 = jest.spyOn(card2.get('search')!.valueChanges, 'subscribe');
-
-    runNgOnChanges();
-
-    expect(spy1).toHaveBeenCalledTimes(1);
-    expect(spy2).toHaveBeenCalledTimes(1);
-    expect((component as any).subscribedControls.has(card1.get('search')!)).toBe(true);
-    expect((component as any).subscribedControls.has(card2.get('search')!)).toBe(true);
+    expect(presenterStub.checkAccountNumberValidity).toHaveBeenCalled();
+    expect(routerStub.navigateByUrl).toHaveBeenCalledWith('/invest/trade-order-confirm');
   });
 
-  it('calls refreshDuplicateValidation when search value changes', () => {
-    const card = stubCard('Buy', 'Action', 'Share', 500);
-    (component as any).cards = { a: card };
+  it('does not call presenter with single account', () => {
+    component.accounts = [{}];
+    component.headerForm = new FormGroup({ brokerageAccount: new FormControl('ACC', Validators.required) });
+    component.cards = [mkCard(true)];
+    component.adjustedAvailableBalance = 10;
 
-    const refreshSpy = jest.spyOn(component as any, 'refreshDuplicateValidation');
+    component.onNextStep();
 
-    runNgOnChanges();
-
-    card.get('search')!.setValue('abc');
-    card.get('search')!.setValue('def');
-
-    expect(refreshSpy).toHaveBeenCalledTimes(2);
+    expect(presenterStub.checkAccountNumberValidity).not.toHaveBeenCalled();
   });
 
-  it('stops reacting after destroy$ emits', () => {
-    const card = stubCard('Buy', 'Action', 'Share', 500);
-    (component as any).cards = { a: card };
+  it('emits event when valid but balance negative', () => {
+    const emitSpy = jest.spyOn(component.stepDataSubmitted, 'emit');
+    component.accounts = [{}, {}];
+    component.headerForm = new FormGroup({ brokerageAccount: new FormControl('ACC', Validators.required) });
+    component.cards = [mkCard(true)];
+    component.adjustedAvailableBalance = -5;
 
-    const refreshSpy = jest.spyOn(component as any, 'refreshDuplicateValidation');
+    component.onNextStep();
 
-    runNgOnChanges();
-    card.get('search')!.setValue('first');
-    expect(refreshSpy).toHaveBeenCalledTimes(1);
-
-    (component as any).destroy$.next();
-    (component as any).destroy$.complete?.();
-
-    card.get('search')!.setValue('second');
-    expect(refreshSpy).toHaveBeenCalledTimes(1);
+    expect(routerStub.navigateByUrl).not.toHaveBeenCalled();
+    expect(emitSpy).toHaveBeenCalled();
   });
 
-  it('ignores stubCards without a search control', () => {
-    const noSearchCard = stubCard('Buy', 'Action', 'Share', 500);
-    noSearchCard.removeControl('search'); // simulate missing control
-    (component as any).cards = { a: noSearchCard };
+  it('scrolls to first invalid card element', () => {
+    component.accounts = [{}, {}];
+    component.headerForm = new FormGroup({ brokerageAccount: new FormControl('ACC', Validators.required) });
+    component.cards = [mkCard(false), mkCard(true)];
+    const native = { 
+      getBoundingClientRect: () => ({ top: 200 }),
+      scrollIntoView: jest.fn() 
+    };
+    component.stepCardElements = makeQueryList<any>([{ nativeElement: native }]);
 
-    runNgOnChanges();
+    component.onNextStep();
+    jest.runOnlyPendingTimers();
 
-    expect((component as any).subscribedControls.size).toBe(0);
+    expect(native.scrollIntoView).toHaveBeenCalled();
+    expect((global as any).window.scrollTo).toHaveBeenCalled();
+  });
+
+  it('does not scroll if scroll element missing', () => {
+    component.accounts = [{}, {}];
+    component.headerForm = new FormGroup({ brokerageAccount: new FormControl('ACC', Validators.required) });
+    component.cards = [mkCard(false)];
+    component.stepCardElements = makeQueryList<any>([undefined as any]);
+
+    component.onNextStep();
+    jest.runOnlyPendingTimers();
+
+    expect((global as any).window.scrollTo).not.toHaveBeenCalled();
   });
 });
