@@ -1,39 +1,55 @@
-describe('createOrder - TradeSecurity mapping', () => {
-  it('maps all card fields to trade security object', () => {
-    const card = stubCard('CUSIP123', SecurityType.ETF, 'BUY', 10, UnitType.Dollars);
-    card.get('cusipNumber').setValue('cusip123');
-    card.get('actionToggle').setValue('buy');
-    card.get('securityName').setValue('test security');
-    card.get('tradeType').setValue('stock');
-    card.get('shareToggle').setValue('dollars');
-    card.get('feesIncluded').setValue(true);
-    card.get('liquidateAll').setValue(false);
+it('calls calculateMaxAllowed with correct values for Dollars + FI', () => {
+  const mockPositions = {
+    brokerageAccountNumber: 'T12345678',
+    positions: [
+      {
+        symbol: 'AAPL',
+        marketValue: 2000,
+        quantity: 100,
+        type: SecurityType.FI,   // triggers FI branch
+        lastPrice: 10,
+        holdingPrice: 5,
+        cusip: 'A12345678',
+      },
+    ],
+  };
 
-    const order = presenter.createOrder([card], accountNumber, activeBrokerageAccount);
-    const trade = order.trades[0];
+  form.get('shareToggle')?.setValue(UnitType.Dollars);
+  form.get('tradeType')?.setValue(SecurityType.FI);
 
-    expect(trade.cusip).toBe('cusip123');
-    expect(trade.actionType).toBe('BUY');
-    expect(trade.securityName).toBe('TEST SECURITY');
-    expect(trade.securityType).toBe('STOCK');
-    expect(trade.unitTypeCode).toBe('DOLLARS');
-    expect(trade.feesIncluded).toBe(true);
-    expect(trade.liquidateAll).toBe(false);
-  });
+  presenter.sellValidate(form, 'T12345678', mockPositions);
 
-  it('handles missing optional fields gracefully', () => {
-    const card = stubCard('CUSIP456', SecurityType.MF, 'SELL', 5, UnitType.Bonds);
-    // leave some fields unset to test ?. safe navigation
-    card.get('cusipNumber').setValue('CUSIP456');
-    card.get('shareToggle').setValue('bonds');
+  const amountControl = form.get('amount');
+  expect(amountControl?.validator).toBeDefined();
 
-    const order = presenter.createOrder([card], accountNumber, activeBrokerageAccount);
-    const trade = order.trades[0];
+  amountControl?.setValue(3); // something inside allowed range
+  expect(amountControl?.errors).toBeNull();
+});
 
-    expect(trade.cusip).toBe('CUSIP456');
-    expect(trade.actionType).toBeUndefined();
-    expect(trade.securityName).toBeUndefined();
-    expect(trade.securityType).toBeUndefined();
-    expect(trade.unitTypeCode).toBe('BONDS'); // still uppercases
-  });
+it('calls calculateMaxAllowed with correct values for Shares + non-FI', () => {
+  const mockPositions = {
+    brokerageAccountNumber: 'T12345678',
+    positions: [
+      {
+        symbol: 'AAPL',
+        marketValue: 5000,
+        quantity: 50,
+        type: 'Equity',  // non-FI
+        lastPrice: 100,
+        holdingPrice: 80,
+        cusip: 'A12345678',
+      },
+    ],
+  };
+
+  form.get('shareToggle')?.setValue(UnitType.Shares);
+  form.get('tradeType')?.setValue('Equity');
+
+  presenter.sellValidate(form, 'T12345678', mockPositions);
+
+  const qtyControl = form.get('quantity');
+  expect(qtyControl?.validator).toBeDefined();
+
+  qtyControl?.setValue(25); // within allowed
+  expect(qtyControl?.errors).toBeNull();
 });
