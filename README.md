@@ -1,28 +1,18 @@
-export function duplicateCusipAcrossCardsValidator(
-  getCards: () => FormGroup[],
-  getPositionsResponse: () => AccountPositionsResponseInfo | null
-): ValidatorFn {
-  return (control: AbstractControl): ValidationErrors | null => {
-    const cards = getCards?.() ?? [];
-    const group = control.parent as FormGroup;
-    if (!cards.length || !group) return null;
+function resolveCusipFromResponse(
+  search: unknown,
+  resp?: AccountPositionsResponseInfo | null
+): string | null {
+  const q = typeof search === 'string' ? search.trim() : '';
+  if (!q) return null;
 
-    const resp = getPositionsResponse?.() ?? null;
+  const Q = q.toUpperCase();
 
-    // Get the CUSIP for *this* card
-    const currentCusip = resolveCusipFromResponse(group.get('search')?.value, resp);
-    if (!currentCusip) return null;
+  const positions = resp?.accountPositions?.flatMap(a => a.positions ?? []) ?? [];
 
-    // Count how many cards resolve to the same CUSIP
-    let sameCusipCount = 0;
-    for (const card of cards) {
-      const cusip = resolveCusipFromResponse(card.get('search')?.value, resp);
-      if (cusip && cusip.toUpperCase() === currentCusip.toUpperCase()) {
-        sameCusipCount++;
-      }
-    }
+  let pos =
+    positions.find(p => p?.cusip?.toUpperCase() === Q) ??
+    positions.find(p => p?.symbol?.toUpperCase() === Q) ??
+    positions.find(p => p?.description?.toUpperCase() === Q);
 
-    // If more than one → duplicate
-    return sameCusipCount > 1 ? { duplicateCusip: true } : null;
-  };
+  return pos?.cusip ?? null;
 }
