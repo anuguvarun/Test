@@ -1,5 +1,5 @@
 import { fakeAsync, tick } from '@angular/core/testing';
-
+b
 describe('feesUnchecked()', () => {
   let modalServiceStub: { open: jest.Mock };
   let component: any; // replace with actual component type
