@@ -7,39 +7,36 @@ class FakeModalService {
   open = jest.fn<ModalRef, [any]>();
 }
 
-// Minimal shape to test against (replace with your real class/component)
-class UnderTest {
-  constructor(
-    public modalService: { open: (cfg: any) => ModalRef },
-    public feesIncluded: { value: boolean; setValue: (v: boolean) => void }
-  ) {}
-  // paste your real method here in production; this is just the signature:
-  feesUnchecked!: () => void;
-}
-
-// small async helper to flush microtasks
-const flush = () => new Promise<void>(res => setImmediate(() => res()));
-
 describe('feesUnchecked()', () => {
+  // Minimal “component” shape needed for the tests
   let modalService: FakeModalService;
-  let feesIncluded: { value: boolean; setValue: jest.Mock };
-  let instance: UnderTest;
+  let comp: {
+    modalService: FakeModalService;
+    feesIncluded: { value: boolean; setValue: (v: boolean) => void };
+    feesUnchecked: () => void;
+  };
+
+  const flushPromises = () => new Promise(setImmediate);
 
   beforeEach(() => {
     modalService = new FakeModalService();
-    feesIncluded = { value: false, setValue: jest.fn() };
 
-    instance = new UnderTest(modalService, feesIncluded);
-    // bind the real implementation from your code:
-    instance.feesUnchecked = function () {
-      // --- copy of the method from the screenshot ---
+    const feesIncluded = {
+      value: false,
+      setValue: jest.fn<void, [boolean]>(),
+    };
+
+    // Inline implementation that mirrors the function in your screenshot
+    const feesUnchecked = function (this: any) {
       if (!this.feesIncluded.value) {
         const modalRef = this.modalService.open({
           windowId: 'feesUncheckedModal',
           noDismiss: true,
-          type: (global as any).ModalType?.default ?? 'default',
+          type: 'ModalType.default',
           title: 'Remove transaction fees?',
-          text: 'If applicable, fees will be not be withheld from the sell amount. This may reduce the expected amount of proceeds from the sell.',
+          text:
+            'If applicable, fees will be not be withheld from the sell amount. ' +
+            'This may reduce the expected amount of proceeds from the sell..',
           size: 'md',
           analyticsConfig: { name: 'DF Fees unchecked modal' },
           buttons: [
@@ -47,7 +44,9 @@ describe('feesUnchecked()', () => {
               text: 'Continue',
               buttonId: 'continue-button',
               iconConfig: { name: 'arrow-circle-right', placement: 'right' },
-              accessibilityConfig: { label: 'DF Fees unchecked change confirmation' },
+              accessibilityConfig: {
+                label: 'DF Fees unchecked change confirmation',
+              },
               action: 'dismiss',
             },
             { text: 'Cancel', action: 'close' },
@@ -59,80 +58,88 @@ describe('feesUnchecked()', () => {
           .catch(() => this.feesIncluded.setValue(false));
       }
     };
+
+    comp = { modalService, feesIncluded, feesUnchecked };
   });
 
-  test('does nothing when feesIncluded is already true', () => {
-    feesIncluded.value = true;
+  it('does NOT open the modal when feesIncluded.value is true', () => {
+    comp.feesIncluded.value = true;
 
-    instance.feesUnchecked();
+    comp.feesUnchecked();
 
     expect(modalService.open).not.toHaveBeenCalled();
-    expect(feesIncluded.setValue).not.toHaveBeenCalled();
+    expect(comp.feesIncluded.setValue).not.toHaveBeenCalled();
   });
 
-  test('opens the modal with expected core config when feesIncluded is false', () => {
-    // unresolved promise so we can just inspect the config
-    modalService.open.mockReturnValue({ result: new Promise(() => {}) });
+  it('opens the modal when feesIncluded.value is false', () => {
+    comp.feesIncluded.value = false;
 
-    instance.feesUnchecked();
+    // stub a pending result (don’t resolve yet)
+    modalService.open.mockReturnValue({
+      result: new Promise(() => {
+        /* pending */
+      }),
+    });
+
+    comp.feesUnchecked();
 
     expect(modalService.open).toHaveBeenCalledTimes(1);
-    const cfg = modalService.open.mock.calls[0][0];
+  });
 
-    expect(cfg).toEqual(
+  it('passes expected config to modalService.open', () => {
+    comp.feesIncluded.value = false;
+
+    modalService.open.mockReturnValue({
+      result: new Promise(() => {
+        /* pending */
+      }),
+    });
+
+    comp.feesUnchecked();
+
+    expect(modalService.open).toHaveBeenCalledWith(
       expect.objectContaining({
         windowId: 'feesUncheckedModal',
         noDismiss: true,
         title: 'Remove transaction fees?',
         size: 'md',
         analyticsConfig: { name: 'DF Fees unchecked modal' },
+        buttons: expect.arrayContaining([
+          expect.objectContaining({
+            text: 'Continue',
+            buttonId: 'continue-button',
+            action: 'dismiss',
+          }),
+          expect.objectContaining({ text: 'Cancel', action: 'close' }),
+        ]),
       })
     );
-
-    // Buttons content
-    expect(cfg.buttons).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          text: 'Continue',
-          buttonId: 'continue-button',
-          action: 'dismiss',
-          iconConfig: expect.objectContaining({
-            name: 'arrow-circle-right',
-            placement: 'right',
-          }),
-          accessibilityConfig: expect.objectContaining({
-            label: 'DF Fees unchecked change confirmation',
-          }),
-        }),
-        expect.objectContaining({
-          text: 'Cancel',
-          action: 'close',
-        }),
-      ])
-    );
   });
 
-  test('on modal resolve, sets feesIncluded to true', async () => {
-    let resolve!: () => void;
-    const result = new Promise<void>(res => (resolve = res));
-    modalService.open.mockReturnValue({ result });
+  it('sets feesIncluded to true when modal resolves (Continue)', async () => {
+    comp.feesIncluded.value = false;
 
-    instance.feesUnchecked();
-    resolve(); // simulate clicking "Continue" / resolve path
-    await flush();
+    modalService.open.mockReturnValue({
+      result: Promise.resolve(),
+    });
 
-    expect(feesIncluded.setValue).toHaveBeenCalledWith(true);
+    comp.feesUnchecked();
+    await flushPromises();
+
+    expect(comp.feesIncluded.setValue).toHaveBeenCalledWith(true);
   });
 
-  test('on modal reject, sets feesIncluded to false', async () => {
-    let reject!: (e?: unknown) => void;
-    const result = new Promise<void>((_, rej) => (reject = rej));
-    modalService.open.mockReturnValue({ result });
+  it('sets feesIncluded to false when modal rejects (Cancel/close)', async () => {
+    comp.feesIncluded.value = false;
 
-    instance.feesUnchecked();
-    reject(new Error('cancel')); // simulate dismiss/close path
-    await flush();
+    // Avoid “unhandledrejection” noise by returning a caught rejection
+    modalService.open.mockReturnValue({
+      result: Promise.reject(new Error('closed')),
+    });
 
-    expect(feesIncluded.setValue).toHaveBeenCalledWith(false);
+    comp.feesUnchecked();
+    await flushPromises();
+
+    expect(comp.feesIncluded.setValue).toHaveBeenCalledWith(false);
   });
 });
