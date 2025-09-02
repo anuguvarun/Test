@@ -1,67 +1,31 @@
-l// step-card.component.spec.ts
-import { Validators } from '@angular/forms';
-import { StepCardComponent } from './step-card.component';
+it('sets Dollars when MF + Buy (covers line 213)', () => {
+  const card = stubCard('X', SecurityType.MF);
+  component.index = 0;
+  component.cardFormGroup = card;
 
-// Lightweight stubs for constructor deps
-const mockPresenter = {} as any;
-const mockCdr = { markForCheck: jest.fn() } as any;
-const mockDocument = {} as unknown as Document;
-const mockModalService = { open: jest.fn(), close: jest.fn() } as any;
+  // Ensure starting state
+  card.get('shareToggle').setValue(null);
 
-describe('StepCardComponent (unit)', () => {
-  let component: StepCardComponent;
+  // MF + Buy → hits: if (action.value === ActionType.Buy) { … }  // L213
+  card.get('actionToggle').setValue(ActionType.Buy);
+  component.onActionChange();
 
-  beforeEach(() => {
-    component = new StepCardComponent(
-      mockPresenter,
-      mockCdr,
-      mockDocument,
-      mockModalService
-    );
+  expect(card.get('shareToggle').value).toEqual(UnitType.Dollars);
+});
 
-    // Stub out the controls the component uses in setupValidators()
-    component.tradeType = { setValidators: jest.fn(), value: 'BUY' } as any;
-    component.actionToggle = { setValidators: jest.fn() } as any;
-    component.shareToggle = { setValidators: jest.fn() } as any;
-    component.search = { setValidators: jest.fn() } as any;
+it('switches to FI, marks isFi, and sets Bonds (covers 220–221)', () => {
+  const card = stubCard('X', SecurityType.MF); // start anywhere, then flip to FI
+  component.index = 0;
+  component.cardFormGroup = card;
 
-    // Properties referenced by the validator factories
-    (component as any).securityPriceData = { some: 'data' };
-    (component as any).searchSent = false;
-  });
+  // Spy to prove we executed the FI branch body
+  const updateEstimatedValueSpy = jest.spyOn(component, 'updateEstimatedValue');
 
-  it('ngOnInit calls updateValidators', () => {
-    const spy = jest.spyOn(component as any, 'updateValidators');
-    component.ngOnInit();
-    expect(spy).toHaveBeenCalled();
-  });
+  // FI case → hits: this.isFi = true; units.setValue(UnitType.Bonds);  // L220–221
+  card.get('tradeType').setValue(SecurityType.FI);
+  component.onActionChange();
 
-  it('createDisplayLabels maps codes to {value, displayValue}', () => {
-    const codes = { A: 'Alpha', B: 'Beta' };
-    const result = component.createDisplayLabels(codes as any);
-
-    expect(result).toEqual([
-      { value: 'A', displayValue: 'Alpha' },
-      { value: 'B', displayValue: 'Beta' },
-    ]);
-  });
-
-  it('setupValidators sets validators for all controls', () => {
-    component.setupValidators();
-
-    // tradeType / actionToggle / shareToggle each get [Validators.required]
-    expect(component.tradeType.setValidators).toHaveBeenCalledWith([Validators.required]);
-    expect(component.actionToggle.setValidators).toHaveBeenCalledWith([Validators.required]);
-    expect(component.shareToggle.setValidators).toHaveBeenCalledWith([Validators.required]);
-
-    // search gets [required, searchValidator(...), securityResponseValidator(...)]
-    expect((component.search.setValidators as jest.Mock).mock.calls.length).toBe(1);
-
-    const validatorsArray = (component.search.setValidators as jest.Mock).mock.calls[0][0];
-    expect(Array.isArray(validatorsArray)).toBe(true);
-    expect(validatorsArray[0]).toBe(Validators.required);
-    // the next two items are validator functions produced by the factories
-    expect(typeof validatorsArray[1]).toBe('function');
-    expect(typeof validatorsArray[2]).toBe('function');
-  });
+  expect(component.isFi).toBe(true);                                  // proves L220 ran
+  expect(card.get('shareToggle').value).toEqual(UnitType.Bonds);       // proves L221 ran
+  expect(updateEstimatedValueSpy).toHaveBeenCalled();                  // inside FI block
 });
