@@ -1,97 +1,67 @@
-// fees-unchecked.spec.ts
-import { ModalType } from 'wherever/your/modal/type/is'; // adjust
-import { YourComponent } from '../path/to/your-component'; // adjust
+l// step-card.component.spec.ts
+import { Validators } from '@angular/forms';
+import { StepCardComponent } from './step-card.component';
 
-// Small helper to flush microtasks created by Promise.then/catch
-const flush = () => new Promise<void>(r => setImmediate(r));
+// Lightweight stubs for constructor deps
+const mockPresenter = {} as any;
+const mockCdr = { markForCheck: jest.fn() } as any;
+const mockDocument = {} as unknown as Document;
+const mockModalService = { open: jest.fn(), close: jest.fn() } as any;
 
-describe('feesUnchecked', () => {
-  let component: YourComponent;
-  let modalService: { open: jest.Mock };
-  let feesIncluded: { value: boolean; setValue: jest.Mock };
+describe('StepCardComponent (unit)', () => {
+  let component: StepCardComponent;
 
   beforeEach(() => {
-    modalService = { open: jest.fn() };
-    feesIncluded = { value: false, setValue: jest.fn() };
-
-    // Create the component however you normally do in tests.
-    // If you use Angular TestBed, swap this with TestBed.createComponent(...).componentInstance.
-    component = new YourComponent(/* deps… */) as any;
-
-    // Inject the minimal shapes needed for this method
-    (component as any).modalService = modalService;
-    (component as any).feesIncluded = feesIncluded;
-  });
-
-  it('does nothing when fees are already included (no modal)', () => {
-    feesIncluded.value = true;
-
-    component.feesUnchecked();
-
-    expect(modalService.open).not.toHaveBeenCalled();
-    expect(feesIncluded.setValue).not.toHaveBeenCalled();
-  });
-
-  it('opens the confirmation modal with expected config when fees are NOT included', () => {
-    feesIncluded.value = false;
-    modalService.open.mockReturnValue({
-      result: new Promise(() => {
-        /* unresolved on purpose */
-      }),
-    });
-
-    component.feesUnchecked();
-
-    expect(modalService.open).toHaveBeenCalledTimes(1);
-    expect(modalService.open).toHaveBeenCalledWith(
-      expect.objectContaining({
-        windowId: 'feesUncheckedModal',
-        noDismiss: true,
-        type: ModalType.default,
-        title: 'Remove transaction fees?',
-        text:
-          'If applicable, fees will be not be withheld from the sell amount. This may reduce the expected amount of proceeds from the sell.',
-        size: 'md',
-        analyticsConfig: { name: 'DF Fees unchecked modal' },
-        buttons: expect.arrayContaining([
-          expect.objectContaining({
-            text: 'Continue',
-            buttonId: 'continue-button',
-            iconConfig: { name: 'arrow-circle-right', placement: 'right' },
-            accessibilityConfig: {
-              label: 'DF Fees unchecked change confirmation',
-            },
-            action: 'dismiss',
-          }),
-          expect.objectContaining({
-            text: 'Cancel',
-            action: 'close',
-          }),
-        ]),
-      })
+    component = new StepCardComponent(
+      mockPresenter,
+      mockCdr,
+      mockDocument,
+      mockModalService
     );
+
+    // Stub out the controls the component uses in setupValidators()
+    component.tradeType = { setValidators: jest.fn(), value: 'BUY' } as any;
+    component.actionToggle = { setValidators: jest.fn() } as any;
+    component.shareToggle = { setValidators: jest.fn() } as any;
+    component.search = { setValidators: jest.fn() } as any;
+
+    // Properties referenced by the validator factories
+    (component as any).securityPriceData = { some: 'data' };
+    (component as any).searchSent = false;
   });
 
-  it('sets feesIncluded to true when the modal resolves (Continue)', async () => {
-    feesIncluded.value = false;
-    modalService.open.mockReturnValue({ result: Promise.resolve() });
-
-    component.feesUnchecked();
-    await flush();
-
-    expect(feesIncluded.setValue).toHaveBeenCalledTimes(1);
-    expect(feesIncluded.setValue).toHaveBeenCalledWith(true);
+  it('ngOnInit calls updateValidators', () => {
+    const spy = jest.spyOn(component as any, 'updateValidators');
+    component.ngOnInit();
+    expect(spy).toHaveBeenCalled();
   });
 
-  it('sets feesIncluded to false when the modal rejects (Cancel/close)', async () => {
-    feesIncluded.value = false;
-    modalService.open.mockReturnValue({ result: Promise.reject(new Error('closed')) });
+  it('createDisplayLabels maps codes to {value, displayValue}', () => {
+    const codes = { A: 'Alpha', B: 'Beta' };
+    const result = component.createDisplayLabels(codes as any);
 
-    component.feesUnchecked();
-    // prevent unhandled rejection noise in test output
-    await flush();
+    expect(result).toEqual([
+      { value: 'A', displayValue: 'Alpha' },
+      { value: 'B', displayValue: 'Beta' },
+    ]);
+  });
 
-    expect(feesIncluded.setValue).toHaveBeenCalledTimes(1);
-    expect(feesIncluded.setValue).toHaveBeenCalledWith(false);
+  it('setupValidators sets validators for all controls', () => {
+    component.setupValidators();
+
+    // tradeType / actionToggle / shareToggle each get [Validators.required]
+    expect(component.tradeType.setValidators).toHaveBeenCalledWith([Validators.required]);
+    expect(component.actionToggle.setValidators).toHaveBeenCalledWith([Validators.required]);
+    expect(component.shareToggle.setValidators).toHaveBeenCalledWith([Validators.required]);
+
+    // search gets [required, searchValidator(...), securityResponseValidator(...)]
+    expect((component.search.setValidators as jest.Mock).mock.calls.length).toBe(1);
+
+    const validatorsArray = (component.search.setValidators as jest.Mock).mock.calls[0][0];
+    expect(Array.isArray(validatorsArray)).toBe(true);
+    expect(validatorsArray[0]).toBe(Validators.required);
+    // the next two items are validator functions produced by the factories
+    expect(typeof validatorsArray[1]).toBe('function');
+    expect(typeof validatorsArray[2]).toBe('function');
   });
 });
