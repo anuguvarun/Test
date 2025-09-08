@@ -1,31 +1,25 @@
-it('sets Dollars when MF + Buy (covers line 213)', () => {
-  const card = stubCard('X', SecurityType.MF);
-  component.index = 0;
-  component.cardFormGroup = card;
+import { TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
+import { MyComponent } from './my.component';
 
-  // Ensure starting state
-  card.get('shareToggle').setValue(null);
+describe('MyComponent.onEditTradeRequest', () => {
+  let component: MyComponent;
+  let routerMock: { navigateByUrl: jest.Mock };
 
-  // MF + Buy → hits: if (action.value === ActionType.Buy) { … }  // L213
-  card.get('actionToggle').setValue(ActionType.Buy);
-  component.onActionChange();
+  beforeEach(async () => {
+    routerMock = { navigateByUrl: jest.fn() };
 
-  expect(card.get('shareToggle').value).toEqual(UnitType.Dollars);
-});
+    await TestBed.configureTestingModule({
+      declarations: [MyComponent],
+      providers: [{ provide: Router, useValue: routerMock }], // injects mock
+    }).compileComponents();
 
-it('switches to FI, marks isFi, and sets Bonds (covers 220–221)', () => {
-  const card = stubCard('X', SecurityType.MF); // start anywhere, then flip to FI
-  component.index = 0;
-  component.cardFormGroup = card;
+    const fixture = TestBed.createComponent(MyComponent);
+    component = fixture.componentInstance;
+  });
 
-  // Spy to prove we executed the FI branch body
-  const updateEstimatedValueSpy = jest.spyOn(component, 'updateEstimatedValue');
-
-  // FI case → hits: this.isFi = true; units.setValue(UnitType.Bonds);  // L220–221
-  card.get('tradeType').setValue(SecurityType.FI);
-  component.onActionChange();
-
-  expect(component.isFi).toBe(true);                                  // proves L220 ran
-  expect(card.get('shareToggle').value).toEqual(UnitType.Bonds);       // proves L221 ran
-  expect(updateEstimatedValueSpy).toHaveBeenCalled();                  // inside FI block
+  it('navigates to /invest/trade-order', () => {
+    component.onEditTradeRequest();
+    expect(routerMock.navigateByUrl).toHaveBeenCalledWith('/invest/trade-order');
+  });
 });
