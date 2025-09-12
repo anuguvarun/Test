@@ -1,29 +1,49 @@
-// my.component.spec.ts
+// one-trade-confirm-message.component.spec.ts
 import { TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
-import { RouterTestingModule } from '@angular/router/testing';
-import { MyComponent } from './my.component';
+import { ChangeDetectionStrategy } from '@angular/core';
+import { OneTradeConfirmMessageComponent } from './one-trade-confirm-message.component';
 
-describe('MyComponent.onEditTradeRequest', () => {
-  let component: MyComponent;
-  let router: Router;
-
+describe('OneTradeConfirmMessageComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [RouterTestingModule.withRoutes([])], // provides Router
-      declarations: [MyComponent],
-    }).compileComponents();
-
-    const fixture = TestBed.createComponent(MyComponent);
-    component = fixture.componentInstance;
-    router = TestBed.inject(Router);
+      // If the component is standalone (most likely, since it uses `imports:`),
+      // we can import it directly here.
+      imports: [OneTradeConfirmMessageComponent],
+    })
+      // Avoid pulling in the external template and any of its dependencies
+      .overrideComponent(OneTradeConfirmMessageComponent, {
+        set: { template: '<div>stub</div>' },
+      })
+      .compileComponents();
   });
 
-  it('navigates to /invest/trade-order', () => {
-    const spy = jest.spyOn(router, 'navigateByUrl').mockImplementation(() => true as any);
+  it('should create', () => {
+    const fixture = TestBed.createComponent(OneTradeConfirmMessageComponent);
+    const component = fixture.componentInstance;
+    expect(component).toBeTruthy();
+  });
 
-    component.onEditTradeRequest();
+  it('should use the correct selector', () => {
+    // Angular stores runtime metadata on ɵcmp
+    const cmpDef: any = (OneTradeConfirmMessageComponent as any).ɵcmp;
+    // selectors looks like: [[ 'fc-one-trade-confirm-message-ui' ]]
+    expect(cmpDef.selectors?.[0]?.[0]).toBe('fc-one-trade-confirm-message-ui');
+  });
 
-    expect(spy).toHaveBeenCalledWith('/invest/trade-order');
+  it('should use OnPush change detection', () => {
+    const cmpDef: any = (OneTradeConfirmMessageComponent as any).ɵcmp;
+    expect(cmpDef.changeDetection).toBe(ChangeDetectionStrategy.OnPush);
+  });
+
+  it('should be a standalone component (if applicable)', () => {
+    const cmpDef: any = (OneTradeConfirmMessageComponent as any).ɵcmp;
+    // Only true if the component was declared with `standalone: true`
+    expect(cmpDef.standalone).toBe(true);
+  });
+
+  it('should render the (overridden) template without errors', () => {
+    const fixture = TestBed.createComponent(OneTradeConfirmMessageComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('stub');
   });
 });
