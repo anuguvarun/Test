@@ -1,19 +1,70 @@
-Impact
+// account-held-securities.component.spec.ts
+import { AccountHeldSecuritiesComponent } from './account-held-securities.component';
 
-This year, I focused on delivering tangible improvements to both functionality and user experience. I developed critical features such as the model popup for unselecting fees, duplicate trade security to prevent duplicate symbol submissions, and key parts of Step 2 and the Thank You page. I also implemented sell validations to ensure users cannot oversell amounts or quantities, and introduced the held securities modal popup, enabling users to view their account holdings seamlessly. Collectively, these enhancements improved the platform’s reliability, usability, and customer trust.
+type Position = { marketValue: number; holdingPct: number };
+type AccountPositionsResponseInfo = {
+  brokerageAccountNumber: string;
+  positions: Position[];
+};
 
-Self-Motivation
+describe('AccountHeldSecuritiesComponent', () => {
+  let component: AccountHeldSecuritiesComponent;
 
-I consistently looked for ways to improve workflows and reduce inefficiencies. For example, I implemented the ngrx store to streamline state management. I also identified and resolved a long-standing bottleneck in local development: instead of manually copying files from the library to the main app, I linked both applications. This change eliminated repetitive steps, significantly reducing development time and improving productivity across the team. These efforts reflect my proactive approach to solving problems and driving continuous improvement.
+  const makeAccountPositions = (
+    positions: Position[],
+    acct = 'ABC123'
+  ): AccountPositionsResponseInfo[] => [
+    { brokerageAccountNumber: acct, positions },
+  ];
 
-Teamwork & Collaboration
+  beforeEach(() => {
+    component = new AccountHeldSecuritiesComponent();
+  });
 
-Collaboration was a key focus for me throughout the year. I regularly stepped in to help teammates when they were blocked, supported releases, and actively participated in PR reviews to ensure high-quality deliverables. I worked closely with the design team to suggest a mobile-friendly layout for held securities, ensuring alignment between engineering and design. Additionally, I partnered with my team to review the complete application flow, ensuring all user stories and features were captured accurately.
+  it('ngOnInit should copy inputs to fields', () => {
+    const positions: Position[] = [
+      { marketValue: 100, holdingPct: 0.2 },
+      { marketValue: 50, holdingPct: 0.1 },
+    ];
+    component.accountPositions = makeAccountPositions(positions) as any;
 
-Leadership & Influence
+    component.ngOnInit();
 
-Beyond my individual contributions, I aimed to elevate the team’s overall effectiveness. I supported releases by working across teams to resolve automation and monitoring issues, demonstrating leadership under time-sensitive conditions. I also influenced technical direction by suggesting improvements in design and architecture, and by providing guidance during PR reviews. These actions helped shape not only the technical quality but also the collaborative culture of our team.
+    expect(component.heldSecurities).toBe(positions);
+    expect(component.brokerageAccountNumber).toBe('ABC123');
+  });
 
-Forward-Looking
+  it('totalMarketValue() should sum marketValue', () => {
+    component.accountPositions = makeAccountPositions([
+      { marketValue: 10, holdingPct: 0.05 },
+      { marketValue: 90, holdingPct: 0.45 },
+    ]) as any;
 
-Looking ahead, I aim to build on these contributions by taking more ownership of cross-team initiatives and driving larger architectural improvements. My goal is to continue delivering impactful features, mentor peers in advanced technical practices, and help ensure our applications scale smoothly as we expand functionality.
+    component.ngOnInit();
+
+    expect(component.totalMarketValue()).toBe(100);
+  });
+
+  it('totalHoldingPct() should sum holdingPct', () => {
+    component.accountPositions = makeAccountPositions([
+      { marketValue: 1, holdingPct: 0.2 },
+      { marketValue: 2, holdingPct: 0.3 },
+      { marketValue: 3, holdingPct: 0.5 },
+    ]) as any;
+
+    component.ngOnInit();
+
+    expect(component.totalHoldingPct()).toBeCloseTo(1.0);
+  });
+
+  it('handles empty positions (reduces to 0)', () => {
+    component.accountPositions = makeAccountPositions([], 'XYZ999') as any;
+
+    component.ngOnInit();
+
+    expect(component.heldSecurities).toEqual([]);
+    expect(component.brokerageAccountNumber).toBe('XYZ999');
+    expect(component.totalMarketValue()).toBe(0);
+    expect(component.totalHoldingPct()).toBe(0);
+  });
+});
