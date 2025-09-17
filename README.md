@@ -1,70 +1,93 @@
-// account-held-securities.component.spec.ts
-import { AccountHeldSecuritiesComponent } from './account-held-securities.component';
+// parent.component.spec.ts
+import { AccountHeldSecuritiesComponent } from '../account-held-securities/account-held-securities.component';
+import { ParentComponent } from './parent.component'; // <-- the component that has checkHeldSecurities
+// If you have enums, import them; otherwise we only assert presence where needed
+// import { ModalType, ButtonType } from 'your-modal-lib';
 
-type Position = { marketValue: number; holdingPct: number };
-type AccountPositionsResponseInfo = {
-  brokerageAccountNumber: string;
-  positions: Position[];
-};
+describe('ParentComponent.checkHeldSecurities', () => {
+  let component: ParentComponent;
 
-describe('AccountHeldSecuritiesComponent', () => {
-  let component: AccountHeldSecuritiesComponent;
+  // very light mock of the modal service the method uses
+  const modalService = {
+    open: jest.fn(),
+  };
 
-  const makeAccountPositions = (
-    positions: Position[],
-    acct = 'ABC123'
-  ): AccountPositionsResponseInfo[] => [
-    { brokerageAccountNumber: acct, positions },
-  ];
+  // Build a realistic modalRef shape the lib usually returns
+  const makeModalRef = () => ({ componentInstance: {} as any });
 
   beforeEach(() => {
-    component = new AccountHeldSecuritiesComponent();
+    jest.resetAllMocks();
+    component = new ParentComponent(modalService as any);
   });
 
-  it('ngOnInit should copy inputs to fields', () => {
-    const positions: Position[] = [
-      { marketValue: 100, holdingPct: 0.2 },
-      { marketValue: 50, holdingPct: 0.1 },
-    ];
-    component.accountPositions = makeAccountPositions(positions) as any;
+  it('opens the modal with the expected config', () => {
+    const modalRef = makeModalRef();
+    modalService.open.mockReturnValue(modalRef);
 
-    component.ngOnInit();
+    component.accountPositions = { accountPositions: [] } as any;
+    const result = component.checkHeldSecurities();
 
-    expect(component.heldSecurities).toBe(positions);
-    expect(component.brokerageAccountNumber).toBe('ABC123');
+    expect(modalService.open).toHaveBeenCalledTimes(1);
+    const cfg = modalService.open.mock.calls[0][0];
+
+    // core config checks
+    expect(cfg).toEqual(
+      expect.objectContaining({
+        windowId: 'heldSecuritiesModal',
+        noDismiss: false,
+        title: 'Held securities',
+        component: AccountHeldSecuritiesComponent,
+        size: 'lg',
+        analyticsConfig: { name: 'DF Held securities modal' },
+      })
+    );
+
+    // type / buttonType could be enums; just assert they exist
+    expect(cfg.type).toBeDefined();
+
+    // button wiring
+    expect(cfg.buttons).toHaveLength(1);
+    expect(cfg.buttons[0]).toEqual(
+      expect.objectContaining({
+        text: 'Done',
+        buttonId: 'confirm-button',
+        action: 'dismiss',
+      })
+    );
+    // button type might be an enum; ensure it’s present
+    expect(cfg.buttons[0].type).toBeDefined();
+
+    // returns the ref we got from the service
+    expect(result).toBe(modalRef);
   });
 
-  it('totalMarketValue() should sum marketValue', () => {
-    component.accountPositions = makeAccountPositions([
-      { marketValue: 10, holdingPct: 0.05 },
-      { marketValue: 90, holdingPct: 0.45 },
-    ]) as any;
+  it('passes accountPositions down to the modal component instance', () => {
+    const modalRef = makeModalRef();
+    modalService.open.mockReturnValue(modalRef);
 
-    component.ngOnInit();
+    const positionsPayload = [{ marketValue: 1, holdingPct: 0.5 }];
+    component.accountPositions = { accountPositions: positionsPayload } as any;
 
-    expect(component.totalMarketValue()).toBe(100);
+    component.checkHeldSecurities();
+
+    expect(modalRef.componentInstance.accountPositions).toBe(positionsPayload);
   });
 
-  it('totalHoldingPct() should sum holdingPct', () => {
-    component.accountPositions = makeAccountPositions([
-      { marketValue: 1, holdingPct: 0.2 },
-      { marketValue: 2, holdingPct: 0.3 },
-      { marketValue: 3, holdingPct: 0.5 },
-    ]) as any;
+  it('sets undefined when accountPositions is missing (safe optional chaining)', () => {
+    const modalRef = makeModalRef();
+    modalService.open.mockReturnValue(modalRef);
 
-    component.ngOnInit();
+    component.accountPositions = undefined as any;
 
-    expect(component.totalHoldingPct()).toBeCloseTo(1.0);
+    component.checkHeldSecurities();
+
+    expect(modalRef.componentInstance.accountPositions).toBeUndefined();
   });
 
-  it('handles empty positions (reduces to 0)', () => {
-    component.accountPositions = makeAccountPositions([], 'XYZ999') as any;
+  it('is safe if modal service returns undefined and returns that value', () => {
+    modalService.open.mockReturnValue(undefined);
 
-    component.ngOnInit();
-
-    expect(component.heldSecurities).toEqual([]);
-    expect(component.brokerageAccountNumber).toBe('XYZ999');
-    expect(component.totalMarketValue()).toBe(0);
-    expect(component.totalHoldingPct()).toBe(0);
+    expect(() => component.checkHeldSecurities()).not.toThrow();
+    expect(component.checkHeldSecurities()).toBeUndefined();
   });
 });
