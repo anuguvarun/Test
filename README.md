@@ -5,13 +5,11 @@ const makeCard = (action: ActionType) =>
     actionToggle: new FormControl(action),
   });
 
-
 it('should correctly filter buy and sell cards', () => {
-  component.cardValues = [
-    makeCard(ActionType.Buy),
-    makeCard(ActionType.Sell),
-    makeCard(ActionType.Buy),
-  ];
+  const cards = [makeCard(ActionType.Buy), makeCard(ActionType.Sell), makeCard(ActionType.Buy)];
+
+  // make ngOnChanges() read this value
+  setGetter(component, cards);
 
   component.ngOnChanges();
 
@@ -19,8 +17,9 @@ it('should correctly filter buy and sell cards', () => {
   expect(component.sellCards).toHaveLength(1);
 });
 
-it('should set both arrays to empty if cardValues is empty', () => {
-  component.cardValues = [];
+it('should set both arrays to empty if cardValues is an empty array', () => {
+  setGetter(component, []);
+
   component.ngOnChanges();
 
   expect(component.buyCards).toEqual([]);
@@ -28,15 +27,15 @@ it('should set both arrays to empty if cardValues is empty', () => {
 });
 
 it('should ignore unknown actionToggle values', () => {
-  // If you want to keep this one as a fake object instead of FormGroup,
-  // give it getRawValue()
-  component.cardValues = [
-    { getRawValue: () => ({ actionToggle: 'Hold' }), value: { actionToggle: 'Hold' } } as any,
-    makeCard(ActionType.Buy),
-  ] as any;
+  // you can mix in a fake that has getRawValue if you prefer
+  const unknown = new FormGroup({ actionToggle: new FormControl('Hold' as any) });
+  const buy     = makeCard(ActionType.Buy);
+
+  setGetter(component, [unknown, buy]);
 
   component.ngOnChanges();
 
   expect(component.buyCards).toHaveLength(1);
   expect(component.sellCards).toHaveLength(0);
 });
+
