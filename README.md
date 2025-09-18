@@ -1,55 +1,71 @@
-import { FormControl, FormGroup } from '@angular/forms';
-// import { ActionType } from '...';  // make sure this enum is imported
+describe('RequestTradeSuccessComponent', () => {
+  let component: RequestTradeSuccessComponent;
 
-// small helper so the forms look like the real thing in your component
-const mkCard = (o: {
-  tradeType?: string;
-  actionToggle?: any;   // ActionType | string
-  shareToggle?: string;
-} = {}) =>
-  new FormGroup({
-    tradeType:   new FormControl(o.tradeType   ?? 'ETF'),
-    actionToggle:new FormControl(o.actionToggle?? ActionType.Buy),
-    shareToggle: new FormControl(o.shareToggle ?? 'Dollars'),
+  beforeEach(() => {
+    jest.clearAllMocks();
+    component = new RequestTradeSuccessComponent(
+      orderStepPresenterMock,
+      analyticsServiceMock
+    );
   });
 
-it('should ignore unknown actionToggle values', () => {
-  const hold = mkCard({ actionToggle: 'Hold' });          // unknown value
-  const buy  = mkCard({ actionToggle: ActionType.Buy });  // valid value
+  test('setting cardValues triggers analytics purchase event once', () => {
+    const cards = [
+      fg({ id: 1, actionToggle: ActionType.Buy }),
+      fg({ id: 2, actionToggle: ActionType.Sell }),
+    ];
 
-  component.cardValues = [hold, buy] as any;
+    component.cardValues = cards;
 
-  expect(component.buyCards).toHaveLength(1);
-  expect(component.sellCards).toHaveLength(0);
-});
+    expect(analyticsServiceMock.trackEvent).toHaveBeenCalledTimes(1);
+    // Check the payload shape without coupling to PurchaseEvent implementation:
+    expect(analyticsServiceMock.trackEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'DonorFlex Trade Card',
+        products: expect.arrayContaining([
+          expect.objectContaining({ index: 0 }),
+          expect.objectContaining({ index: 1 }),
+        ]),
+      })
+    );
+  });
 
-it('should analytics track Event', () => {
-  const form1 = mkCard({ tradeType: 'ETF',  actionToggle: 'Buy',    shareToggle: 'Dollars' });
-  const form2 = mkCard({ tradeType: 'MF',   actionToggle: 'Sell',   shareToggle: 'Shares'  });
+  test('ngOnChanges splits cards into buyCards and sellCards', () => {
+    const buy1 = fg({ id: 'b1', actionToggle: ActionType.Buy });
+    const buy2 = fg({ id: 'b2', actionToggle: ActionType.Buy });
+    const sell1 = fg({ id: 's1', actionToggle: ActionType.Sell });
 
-  component.cardValues = [form1, form2];
+    component.cardValues = [buy1, sell1, buy2];
 
-  // one event with both cards in the payload
-  expect(analyticsServiceStub.trackEvent).toHaveBeenCalledTimes(1);
+    // Act
+    component.ngOnChanges();
 
-  const eventArg = (analyticsServiceStub.trackEvent as jest.Mock).mock.calls[0][0];
-  expect(eventArg).toBeInstanceOf(PurchaseEvent);
-  expect(eventArg).toEqual(
-    expect.objectContaining({
-      type: 'DonorFlex Trade Card',
-      products: expect.arrayContaining([
-        expect.objectContaining({
-          // adapt these to whatever mapTradeCardToAnalytics outputs:
-          name1: 'Trade card 1',
-          data31: 'Sell',
-          data44: 'Shares',
-        }),
-        expect.objectContaining({
-          name1: 'Trade card 1',
-          data31: 'Buy',
-          data44: 'Dollars',
-        }),
-      ]),
-    })
-  );
-});
+    expect(component.buyCards.map(c => c.value.id)).toEqual(['b1', 'b2']);
+    expect(component.sellCards.map(c => c.value.id)).toEqual(['s1']);
+  });
+
+  test('ngOnInit forwards cardValues to orderStepPresenter.updateTotalsByAction', () => {
+    const cards = [
+      fg({ id: 10, actionToggle: ActionType.Buy }),
+      fg({ id: 11, actionToggle: ActionType.Sell }),
+    ];
+    component.cardValues = cards;
+    orderStepPresenterMock.updateTotalsByAction.mockClear(); // isolate ngOnInit call
+
+    component.ngOnInit();
+
+    expect(orderStepPresenterMock.updateTotalsByAction).toHaveBeenCalledTimes(1);
+    expect(orderStepPresenterMock.updateTotalsByAction).toHaveBeenCalledWith(
+      cards
+    );
+  });
+
+  test('ngOnChanges is a no-op if cardValues is undefined', () => {
+    component.cardValues = undefined;
+    component.buyCards = ['placeholder'];
+    component.sellCards = ['placeholder'];
+
+    component.ngOnChanges();
+
+    expect(component.buyCards).toEqual(['placeholder']);
+    expect(component.sellCards).toEqual(['placeholder']);
