@@ -1,9 +1,13 @@
 import { FormControl, FormGroup } from '@angular/forms';
 
-const makeCard = (action: ActionType) =>
-  new FormGroup({
-    actionToggle: new FormControl(action),
+// util to make ngOnChanges "see" our test data without touching the setter
+const setGetter = (cmp: any, value: any) => {
+  Object.defineProperty(cmp, 'cardValues', {
+    get: () => value,
+    configurable: true,
   });
+};
+
 
 it('should correctly filter buy and sell cards', () => {
   const cards = [makeCard(ActionType.Buy), makeCard(ActionType.Sell), makeCard(ActionType.Buy)];
