@@ -1,6 +1,6 @@
-// infer element type from AccountPositionsResponseInfo[]
+// infer element type from the accountPositions array inside AccountPositionsResponseInfo
 type AccountItem =
-  AccountPositionsResponseInfo extends (infer T)[] ? T : never;
+  AccountPositionsResponseInfo extends { accountPositions: (infer T)[] } ? T : never;
 
 // infer position type from AccountItem.positions[]
 type PositionItem =
@@ -13,7 +13,8 @@ const makeAccountPositions = (
   const item: AccountItem = {
     brokerageAccountNumber: acct,
     positions,
-  } as AccountItem;
+  };
 
-  return [item];
+  // return the exact structure the model expects (no casts)
+  return { accountPositions: [item] };
 };
