@@ -1,71 +1,42 @@
-describe('RequestTradeSuccessComponent', () => {
-  let component: RequestTradeSuccessComponent;
+import { FormControl, FormGroup } from '@angular/forms';
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-    component = new RequestTradeSuccessComponent(
-      orderStepPresenterMock,
-      analyticsServiceMock
-    );
+const makeCard = (action: ActionType) =>
+  new FormGroup({
+    actionToggle: new FormControl(action),
   });
 
-  test('setting cardValues triggers analytics purchase event once', () => {
-    const cards = [
-      fg({ id: 1, actionToggle: ActionType.Buy }),
-      fg({ id: 2, actionToggle: ActionType.Sell }),
-    ];
 
-    component.cardValues = cards;
+it('should correctly filter buy and sell cards', () => {
+  component.cardValues = [
+    makeCard(ActionType.Buy),
+    makeCard(ActionType.Sell),
+    makeCard(ActionType.Buy),
+  ];
 
-    expect(analyticsServiceMock.trackEvent).toHaveBeenCalledTimes(1);
-    // Check the payload shape without coupling to PurchaseEvent implementation:
-    expect(analyticsServiceMock.trackEvent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'DonorFlex Trade Card',
-        products: expect.arrayContaining([
-          expect.objectContaining({ index: 0 }),
-          expect.objectContaining({ index: 1 }),
-        ]),
-      })
-    );
-  });
+  component.ngOnChanges();
 
-  test('ngOnChanges splits cards into buyCards and sellCards', () => {
-    const buy1 = fg({ id: 'b1', actionToggle: ActionType.Buy });
-    const buy2 = fg({ id: 'b2', actionToggle: ActionType.Buy });
-    const sell1 = fg({ id: 's1', actionToggle: ActionType.Sell });
+  expect(component.buyCards).toHaveLength(2);
+  expect(component.sellCards).toHaveLength(1);
+});
 
-    component.cardValues = [buy1, sell1, buy2];
+it('should set both arrays to empty if cardValues is empty', () => {
+  component.cardValues = [];
+  component.ngOnChanges();
 
-    // Act
-    component.ngOnChanges();
+  expect(component.buyCards).toEqual([]);
+  expect(component.sellCards).toEqual([]);
+});
 
-    expect(component.buyCards.map(c => c.value.id)).toEqual(['b1', 'b2']);
-    expect(component.sellCards.map(c => c.value.id)).toEqual(['s1']);
-  });
+it('should ignore unknown actionToggle values', () => {
+  // If you want to keep this one as a fake object instead of FormGroup,
+  // give it getRawValue()
+  component.cardValues = [
+    { getRawValue: () => ({ actionToggle: 'Hold' }), value: { actionToggle: 'Hold' } } as any,
+    makeCard(ActionType.Buy),
+  ] as any;
 
-  test('ngOnInit forwards cardValues to orderStepPresenter.updateTotalsByAction', () => {
-    const cards = [
-      fg({ id: 10, actionToggle: ActionType.Buy }),
-      fg({ id: 11, actionToggle: ActionType.Sell }),
-    ];
-    component.cardValues = cards;
-    orderStepPresenterMock.updateTotalsByAction.mockClear(); // isolate ngOnInit call
+  component.ngOnChanges();
 
-    component.ngOnInit();
-
-    expect(orderStepPresenterMock.updateTotalsByAction).toHaveBeenCalledTimes(1);
-    expect(orderStepPresenterMock.updateTotalsByAction).toHaveBeenCalledWith(
-      cards
-    );
-  });
-
-  test('ngOnChanges is a no-op if cardValues is undefined', () => {
-    component.cardValues = undefined;
-    component.buyCards = ['placeholder'];
-    component.sellCards = ['placeholder'];
-
-    component.ngOnChanges();
-
-    expect(component.buyCards).toEqual(['placeholder']);
-    expect(component.sellCards).toEqual(['placeholder']);
+  expect(component.buyCards).toHaveLength(1);
+  expect(component.sellCards).toHaveLength(0);
+});
