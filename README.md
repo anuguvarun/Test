@@ -1,30 +1,56 @@
+
 // account-held-securities.component.spec.ts
 import { AccountHeldSecuritiesComponent } from './account-held-securities.component';
 import { AccountPositionsResponseInfo } from '../models/account-positions-response-info.model';
 import { SecurityPriceData } from '../models/security-price-data.model';
 
-describe('AccountHeldSecuritiesComponent (updated)', () => {
-  let component: AccountHeldSecuritiesComponent;
+/**
+ * Minimal local shapes the component actually uses.
+ * We then cast them to the real app types (no `any`).
+ */
+interface TestPosition {
+  marketValue: number;
+  computedPct?: number;
+}
+interface TestAccountPositionsElement {
+  brokerageAccountNumber: string;
+  positions: TestPosition[];
+}
 
-  const makeAccountPositions = (
-    positions: { marketValue: number }[],
-    acct = 'ABC123'
-  ): AccountPositionsResponseInfo[] => [
+/**
+ * Build a payload compatible with how the component uses the input:
+ * this.accountPositions[0].positions / .brokerageAccountNumber
+ *
+ * We return it as AccountPositionsResponseInfo via a safe `unknown` cast
+ * (keeps code `no-any` while allowing us to manufacture the test data).
+ */
+const makeAccountPositions = (
+  positions: TestPosition[],
+  acct = 'ABC123'
+): AccountPositionsResponseInfo => {
+  const arr: TestAccountPositionsElement[] = [
     { brokerageAccountNumber: acct, positions },
   ];
+  return arr as unknown as AccountPositionsResponseInfo;
+};
+
+describe('AccountHeldSecuritiesComponent', () => {
+  let component: AccountHeldSecuritiesComponent;
 
   beforeEach(() => {
     component = new AccountHeldSecuritiesComponent();
-    // always give it a valid SecurityPriceData (even if empty for now)
+    // If the component doesn’t use securityPriceData in these tests,
+    // a minimal stub keeps types happy without `any`.
     component.securityPriceData = {} as SecurityPriceData;
   });
 
-  it('ngOnInit should copy inputs and compute computedPct for each position', () => {
-    const positions = [
+  it('ngOnInit copies inputs and computes computedPct for each position', () => {
+    const positions: TestPosition[] = [
       { marketValue: 100 },
       { marketValue: 50 },
       { marketValue: 350 },
     ];
+    // total = 500 → computedPct = 20, 10, 70
     component.accountPositions = makeAccountPositions(positions);
 
     component.ngOnInit();
@@ -38,6 +64,9 @@ describe('AccountHeldSecuritiesComponent (updated)', () => {
     expect(cps[0]).toBeCloseTo(20);
     expect(cps[1]).toBeCloseTo(10);
     expect(cps[2]).toBeCloseTo(70);
+
+    // ensure map() created a new array (not the same reference)
+    expect(component.heldSecurities).not.toBe(positions);
   });
 
   it('totalMarketValue() sums marketValue', () => {
@@ -51,7 +80,7 @@ describe('AccountHeldSecuritiesComponent (updated)', () => {
     expect(component.totalMarketValue()).toBe(100);
   });
 
-  it('totalHoldingPct() sums computedPct (should be ~100 when total > 0)', () => {
+  it('totalHoldingPct() sums computedPct (≈100 when total > 0)', () => {
     component.accountPositions = makeAccountPositions([
       { marketValue: 200 },
       { marketValue: 300 },
@@ -60,11 +89,12 @@ describe('AccountHeldSecuritiesComponent (updated)', () => {
 
     component.ngOnInit();
 
+    // Sum should be ~100; allow for float rounding
     expect(component.totalHoldingPct()).toBeCloseTo(100, 8);
   });
 
-  it('handles empty/zero totals: computedPct set to 0 and sums to 0', () => {
-    // Case A: empty positions
+  it('handles empty and zero totals (computedPct -> 0, sums -> 0)', () => {
+    // A) empty
     component.accountPositions = makeAccountPositions([], 'XYZ999');
     component.ngOnInit();
 
@@ -73,7 +103,7 @@ describe('AccountHeldSecuritiesComponent (updated)', () => {
     expect(component.totalMarketValue()).toBe(0);
     expect(component.totalHoldingPct()).toBe(0);
 
-    // Case B: non-empty but total == 0
+    // B) non-empty but total == 0
     component = new AccountHeldSecuritiesComponent();
     component.securityPriceData = {} as SecurityPriceData;
     component.accountPositions = makeAccountPositions([
