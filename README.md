@@ -1,9 +1,11 @@
-it('ngOnInit calls addComputedPct()', () => {
-  // spy on the private method (safe for tests)
-  const spy = jest.spyOn(component as unknown as { addComputedPct: () => void }, 'addComputedPct');
+it('ngOnInit triggers computedPct calculation through addComputedPct()', () => {
+  // Arrange: a position with a known value
+  const positions = [{ marketValue: 100 }];
+  component.accountPositions = makeAccountPositions(positions);
 
-  component.accountPositions = makeAccountPositions([{ marketValue: 123 }]);
+  // Act: call ngOnInit (which should internally call addComputedPct)
   component.ngOnInit();
 
-  expect(spy).toHaveBeenCalledTimes(1);
+  // Assert: effect of addComputedPct should be visible on heldSecurities
+  expect(component.heldSecurities[0].computedPct).toBe(100);
 });
