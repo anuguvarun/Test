@@ -1,45 +1,87 @@
-import { FormControl, FormGroup } from '@angular/forms';
+// check-held-securities.spec.ts
+import { jest } from '@jest/globals';
+// If you have real enums/types, import them instead of stubbing:
+enum ModalType { default = 'default' }
+enum ButtonType { primary = 'primary' }
+// Import the class under test:
+import { AccountComponent } from './account.component';
+// And the component used inside the modal:
+import { AccountHeldSecuritiesComponent } from './account-held-securities.component';
 
-// util to make ngOnChanges "see" our test data without touching the setter
-const setGetter = (cmp: any, value: any) => {
-  Object.defineProperty(cmp, 'cardValues', {
-    get: () => value,
-    configurable: true,
+describe('AccountComponent.checkHeldSecurities', () => {
+  let component: AccountComponent;
+  let modalService: { open: jest.Mock };
+
+  beforeEach(() => {
+    modalService = { open: jest.fn() } as any;
+    // @ts-expect-error – construct with only what we need for this unit
+    component = new AccountComponent(modalService);
   });
-};
 
+  it('opens the Held Securities modal with the expected config', () => {
+    const modalRef = { componentInstance: {} } as any;
+    modalService.open.mockReturnValue(modalRef);
 
-it('should correctly filter buy and sell cards', () => {
-  const cards = [makeCard(ActionType.Buy), makeCard(ActionType.Sell), makeCard(ActionType.Buy)];
+    component.accountPositions = { accountPositions: [{ id: 1 }] };
 
-  // make ngOnChanges() read this value
-  setGetter(component, cards);
+    const returned = component.checkHeldSecurities();
 
-  component.ngOnChanges();
+    expect(modalService.open).toHaveBeenCalledTimes(1);
+    expect(modalService.open).toHaveBeenCalledWith(
+      expect.objectContaining({
+        windowId: 'heldSecuritiesModal',
+        noDismiss: false,
+        type: ModalType.default, // if your code uses a real enum, this will match
+        title: 'Held securities',
+        component: AccountHeldSecuritiesComponent,
+        size: 'lg',
+        analyticsConfig: { name: 'DF Held securities modal' },
+        buttons: [
+          expect.objectContaining({
+            text: 'Done',
+            buttonId: 'confirm-button',
+            type: ButtonType.primary,
+            accessibilityConfig: { label: 'Held securities modal' },
+            action: 'dismiss',
+          }),
+        ],
+      }),
+    );
 
-  expect(component.buyCards).toHaveLength(2);
-  expect(component.sellCards).toHaveLength(1);
+    // returns modalRef
+    expect(returned).toBe(modalRef);
+  });
+
+  it('passes accountPositions into the modal component instance when present', () => {
+    const modalRef = { componentInstance: {} } as any;
+    modalService.open.mockReturnValue(modalRef);
+
+    const positions = [{ id: 'abc' }, { id: 'def' }];
+    component.accountPositions = { accountPositions: positions };
+
+    component.checkHeldSecurities();
+
+    expect(modalRef.componentInstance.accountPositions).toBe(positions);
+  });
+
+  it('leaves componentInstance.accountPositions undefined when component.accountPositions is absent', () => {
+    const modalRef = { componentInstance: {} } as any;
+    modalService.open.mockReturnValue(modalRef);
+
+    component.accountPositions = undefined;
+
+    component.checkHeldSecurities();
+
+    expect(modalRef.componentInstance.accountPositions).toBeUndefined();
+  });
+
+  it('handles a falsy modalRef from modalService.open()', () => {
+    modalService.open.mockReturnValue(null);
+
+    const returned = component.checkHeldSecurities();
+
+    expect(returned).toBeNull();
+    // and of course no attempt to touch componentInstance
+    // (no assertion needed since touching it would throw)
+  });
 });
-
-it('should set both arrays to empty if cardValues is an empty array', () => {
-  setGetter(component, []);
-
-  component.ngOnChanges();
-
-  expect(component.buyCards).toEqual([]);
-  expect(component.sellCards).toEqual([]);
-});
-
-it('should ignore unknown actionToggle values', () => {
-  // you can mix in a fake that has getRawValue if you prefer
-  const unknown = new FormGroup({ actionToggle: new FormControl('Hold' as any) });
-  const buy     = makeCard(ActionType.Buy);
-
-  setGetter(component, [unknown, buy]);
-
-  component.ngOnChanges();
-
-  expect(component.buyCards).toHaveLength(1);
-  expect(component.sellCards).toHaveLength(0);
-});
-
