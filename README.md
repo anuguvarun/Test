@@ -1,64 +1,105 @@
-describe('checkHeldSecurities', () => {
-  let fakeModalRef: { componentInstance: any };
+import { ModalType, ButtonType } from '../modal-types';
+import { TradeOrderConstants } from '../trade-order-constants';
+import { ActionType } from '../action-type';
+
+describe('feesUnchecked (no helper fns)', () => {
+  let component: any;
+  let modalServiceStub: { open: jest.Mock };
 
   beforeEach(() => {
-    fakeModalRef = { componentInstance: {} };
+    modalServiceStub = { open: jest.fn() };
+    component = {
+      modalService: modalServiceStub,
+      feesIncluded: { value: true, setValue: jest.fn() },
+      actionToggle: { value: ActionType.Buy },
+      // hook this up to your real component if needed:
+      feesUnchecked: undefined as any,
+    };
+
+    // If you’re running these inside the real component spec file,
+    // just skip the line above and call component.feesUnchecked() directly.
     jest.clearAllMocks();
   });
 
-  it('calls modalService.open with the expected config', () => {
-    modalServiceStub.open.mockReturnValue(fakeModalRef);
+  it('does nothing when feesIncluded.value is false', () => {
+    component.feesIncluded.value = false;
 
-    component.checkHeldSecurities();
+    component.feesUnchecked();
 
-    expect(modalServiceStub.open).toHaveBeenCalledTimes(1);
+    expect(modalServiceStub.open).not.toHaveBeenCalled();
+    expect(component.feesIncluded.setValue).not.toHaveBeenCalled();
+  });
+
+  it('opens the modal with expected config for Buy', () => {
+    modalServiceStub.open.mockReturnValue({ result: Promise.resolve() });
+
+    component.actionToggle.value = ActionType.Buy;
+    component.feesIncluded.value = true;
+
+    component.feesUnchecked();
+
     expect(modalServiceStub.open).toHaveBeenCalledWith(
       expect.objectContaining({
-        windowId: 'heldSecuritiesModal',
-        noDismiss: false,
+        windowId: 'feesUncheckedModal',
+        noDismiss: true,
         type: ModalType.default,
-        title: 'Held securities',
-        component: AccountHeldSecuritiesComponent,
-        size: 'lg',
-        analyticsConfig: { name: 'DF Held securities modal' },
+        title: 'Remove transaction fees?',
+        text: TradeOrderConstants.FEES_UNCHECKED_MESSAGE_FOR_BUY,
+        size: 'md',
+        analyticsConfig: { name: 'DF Fees unchecked modal' },
         buttons: [
           expect.objectContaining({
-            text: 'Done',
+            text: 'Confirm',
             buttonId: 'confirm-button',
             type: ButtonType.primary,
-            accessibilityConfig: { label: 'Held securities modal' },
+            accessibilityConfig: { label: 'Confirm remove transaction fees button' },
             action: 'dismiss',
+          }),
+          expect.objectContaining({
+            text: 'Cancel',
+            type: ButtonType.secondary,
+            size: 'md',
+            action: 'close',
           }),
         ],
       }),
     );
   });
 
-  it('returns the modalRef and passes accountPositions to the component instance', () => {
-    modalServiceStub.open.mockReturnValue(fakeModalRef);
-    const positions = [{ id: 1 }];
-    component.accountPositions = { accountPositions: positions };
+  it('uses the Sell message when action is Sell', () => {
+    modalServiceStub.open.mockReturnValue({ result: Promise.resolve() });
 
-    const result = component.checkHeldSecurities();
+    component.actionToggle.value = ActionType.Sell;
 
-    expect(result).toBe(fakeModalRef);
-    expect(fakeModalRef.componentInstance.accountPositions).toBe(positions);
+    component.feesUnchecked();
+
+    expect(modalServiceStub.open).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: TradeOrderConstants.FEES_UNCHECKED_MESSAGE_FOR_SELL,
+      }),
+    );
   });
 
-  it('sets modal component positions to undefined when none present', () => {
-    modalServiceStub.open.mockReturnValue(fakeModalRef);
-    component.accountPositions = undefined;
+  it('on resolve: sets feesIncluded to true', async () => {
+    modalServiceStub.open.mockReturnValue({ result: Promise.resolve() });
 
-    component.checkHeldSecurities();
+    component.feesUnchecked();
 
-    expect(fakeModalRef.componentInstance.accountPositions).toBeUndefined();
+    // flush microtasks so the .then() in feesUnchecked runs
+    await Promise.resolve();
+
+    expect(component.feesIncluded.setValue).toHaveBeenCalledWith(true);
   });
 
-  it('handles modalService.open returning undefined', () => {
-    modalServiceStub.open.mockReturnValue(undefined as any);
+  it('on reject: sets feesIncluded to false', async () => {
+    // Use a rejected promise; swallow the unhandled rejection inside the test
+    modalServiceStub.open.mockReturnValue({ result: Promise.reject(new Error('cancel')) });
 
-    const result = component.checkHeldSecurities();
+    component.feesUnchecked();
 
-    expect(result).toBeUndefined();
+    // wait a tick so .catch() inside the method executes
+    await Promise.resolve();
+
+    expect(component.feesIncluded.setValue).toHaveBeenCalledWith(false);
   });
 });
