@@ -1,70 +1,18 @@
-// check-held-securities.spec.ts
-import { AccountHeldSecuritiesComponent } from './account-held-securities.component'; // ✅ adjust path
-import { ModalType, ButtonType } from './modal-types'; // ✅ adjust path(s)
-
-// A tiny shim type for the modalRef that your modal service returns.
-interface ModalRef {
-  componentInstance: Record<string, any>;
-}
-
-class TestHost {
-  constructor(public modalService: { open: jest.Mock }) {}
-  // The code under test (copied from your source so the tests compile in isolation).
-  accountPositions?: { accountPositions?: any[] };
-
-  checkHeldSecurities() {
-    const modalRef: ModalRef | undefined = this.modalService.open({
-      windowId: 'heldSecuritiesModal',
-      noDismiss: false,
-      type: ModalType.default,
-      title: 'Held securities',
-      component: AccountHeldSecuritiesComponent,
-      size: 'lg',
-      analyticsConfig: {
-        name: 'DF Held securities modal',
-      },
-      buttons: [
-        {
-          text: 'Done',
-          buttonId: 'confirm-button',
-          type: ButtonType.primary,
-          accessibilityConfig: { label: 'Held securities modal' },
-          action: 'dismiss',
-        },
-      ],
-    });
-
-    if (modalRef) {
-      modalRef.componentInstance.accountPositions =
-        this.accountPositions?.accountPositions;
-    }
-
-    return modalRef;
-  }
-}
-
 describe('checkHeldSecurities', () => {
-  let host: TestHost;
-  let modalService: { open: jest.Mock };
+  let fakeModalRef: { componentInstance: any };
 
   beforeEach(() => {
-    modalService = {
-      open: jest.fn(),
-    };
-    host = new TestHost(modalService);
+    fakeModalRef = { componentInstance: {} };
+    jest.clearAllMocks();
   });
 
-  test('calls modalService.open with the correct config', () => {
-    // Arrange
-    const fakeModalRef: ModalRef = { componentInstance: {} };
-    modalService.open.mockReturnValue(fakeModalRef);
+  it('calls modalService.open with the expected config', () => {
+    modalServiceStub.open.mockReturnValue(fakeModalRef);
 
-    // Act
-    host.checkHeldSecurities();
+    component.checkHeldSecurities();
 
-    // Assert
-    expect(modalService.open).toHaveBeenCalledTimes(1);
-    expect(modalService.open).toHaveBeenCalledWith(
+    expect(modalServiceStub.open).toHaveBeenCalledTimes(1);
+    expect(modalServiceStub.open).toHaveBeenCalledWith(
       expect.objectContaining({
         windowId: 'heldSecuritiesModal',
         noDismiss: false,
@@ -86,41 +34,31 @@ describe('checkHeldSecurities', () => {
     );
   });
 
-  test('returns the modalRef from modalService.open', () => {
-    const fakeModalRef: ModalRef = { componentInstance: {} };
-    modalService.open.mockReturnValue(fakeModalRef);
+  it('returns the modalRef and passes accountPositions to the component instance', () => {
+    modalServiceStub.open.mockReturnValue(fakeModalRef);
+    const positions = [{ id: 1 }];
+    component.accountPositions = { accountPositions: positions };
 
-    const result = host.checkHeldSecurities();
+    const result = component.checkHeldSecurities();
 
     expect(result).toBe(fakeModalRef);
-  });
-
-  test('passes accountPositions to the modal component instance when available', () => {
-    const fakeModalRef: ModalRef = { componentInstance: {} };
-    modalService.open.mockReturnValue(fakeModalRef);
-
-    const positions = [{ id: 1 }, { id: 2 }];
-    host.accountPositions = { accountPositions: positions };
-
-    host.checkHeldSecurities();
-
     expect(fakeModalRef.componentInstance.accountPositions).toBe(positions);
   });
 
-  test('sets componentInstance.accountPositions to undefined if none on host', () => {
-    const fakeModalRef: ModalRef = { componentInstance: {} };
-    modalService.open.mockReturnValue(fakeModalRef);
+  it('sets modal component positions to undefined when none present', () => {
+    modalServiceStub.open.mockReturnValue(fakeModalRef);
+    component.accountPositions = undefined;
 
-    // host.accountPositions is undefined by default
-    host.checkHeldSecurities();
+    component.checkHeldSecurities();
 
     expect(fakeModalRef.componentInstance.accountPositions).toBeUndefined();
   });
 
-  test('handles modalService.open returning undefined (no modal created)', () => {
-    modalService.open.mockReturnValue(undefined);
+  it('handles modalService.open returning undefined', () => {
+    modalServiceStub.open.mockReturnValue(undefined as any);
 
-    expect(() => host.checkHeldSecurities()).not.toThrow();
-    expect(host.checkHeldSecurities()).toBeUndefined();
+    const result = component.checkHeldSecurities();
+
+    expect(result).toBeUndefined();
   });
 });
