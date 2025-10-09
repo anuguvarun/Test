@@ -1,1 +1,9 @@
-The task-scheduler migration to EKS is currently not functioning in UAT (and likely other environments) due to incorrect environment configurations. The service is only operational in Dit8 and Prod at this time. Given these issues, this release should not proceed to EKS until the configurations are corrected and validated.
+const routes: Routes = [
+  {
+    path: 'demo', // <-- keep this if you want /demo
+    loadChildren: () =>
+      import('@proj/trade-order-request').then(mod => mod.SampleModule)
+      // ^ use your exact alias; module class must be SampleModule
+  },
+  { path: '', redirectTo: 'demo', pathMatch: 'full' }
+];
