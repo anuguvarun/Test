@@ -1,5 +1,8 @@
-this.router.events
-      .pipe(filter(event => event instanceof NavigationEnd))
-      .subscribe((event: NavigationEnd) => {
-        this.previousUrl = event.url;
-      });
+private isAllowedPreviousUrl(url: string): boolean {
+    const allowedUrls = [
+      '/Invest/trade-order-entry',
+      '/Invest/trade-order-confirm',
+      '/Invest/view-managed-account-balances'
+    ];
+    return allowedUrls.includes(url);
+  }
