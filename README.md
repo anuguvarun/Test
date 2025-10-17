@@ -1,14 +1,15 @@
-private previousUrl: string | null = null;
-
-if (this.previousUrl && this.isAllowedPreviousUrl(this.previousUrl)) {
-      return of(true);
+{
+  path: 'trade-order-entry',
+  canActivate: [
+    {
+      provide: OrderStepsGuard,
+      useFactory: (accountService: AccountService, contextService: GuardContextService) => {
+        const account = accountService.getActiveAccountSync(); // must be synchronous
+        contextService.setContext(account);
+        return new OrderStepsGuard(contextService, inject(Router));
+      },
+      deps: [AccountService, GuardContextService]
     }
-
-private isAllowedPreviousUrl(url: string): boolean {
-    const allowedUrls = [
-      '/Invest/trade-order-entry',
-      '/Invest/trade-order-confirm',
-      '/Invest/view-managed-account-balances'
-    ];
-    return allowedUrls.includes(url);
-  }
+  ],
+  component: OrderStepsContainer,
+}
