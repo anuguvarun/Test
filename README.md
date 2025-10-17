@@ -1,9 +1,5 @@
-const routes: Routes = [
-  {
-    path: 'demo', // <-- keep this if you want /demo
-    loadChildren: () =>
-      import('@proj/trade-order-request').then(mod => mod.SampleModule)
-      // ^ use your exact alias; module class must be SampleModule
-  },
-  { path: '', redirectTo: 'demo', pathMatch: 'full' }
-];
+this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd))
+      .subscribe((event: NavigationEnd) => {
+        this.previousUrl = event.url;
+      });
