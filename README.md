@@ -92,5 +92,22 @@ Long getUnApprovedCount(
 
 
 
+----
+
+@Query(value = """
+    SELECT COUNT(DISTINCT tor.tradeRequestId)
+    FROM TradeOrderRequests tor
+    JOIN TradeOrderRequestItems tori
+         ON tor.tradeRequestId = tori.tradeRequestId
+    WHERE tori.tradeStatusCode IN (:itemStatuses)
+      AND tor.createdDate >= :fromDate
+""")
+Long getUnsettledCount(
+        @Param("itemStatuses") List<String> itemStatuses,
+        @Param("fromDate") LocalDateTime fromDate
+);
+
+
+
 
     }
