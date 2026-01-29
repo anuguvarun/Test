@@ -1,21 +1,32 @@
-public TradeOrderSummaryResponse getSummary() {
+-----
 
-        List<String> unApprovedItemStatuses =
-                List.of("PENDING_APPROVAL", "AWAITING_REVIEW");
+public class TradeOrderSummaryResponse {
 
-        List<String> unsettledItemStatuses =
-                List.of("UNSETTLED", "PARTIALLY_SETTLED");
+    private Integer unApprovedCount;
+    private Integer unsettledCount;
+    private ZonedDateTime currentSystemDateTime;
 
-        Long unApprovedCount =
-                repository.getUnApprovedCount(unApprovedItemStatuses);
-
-        Long unsettledCount =
-                repository.getUnsettledCount(unsettledItemStatuses);
-
-        TradeOrderSummaryResponse response = new TradeOrderSummaryResponse();
-        response.setUnApprovedCount(unApprovedCount.intValue());
-        response.setUnsettledCount(unsettledCount.intValue());
-        response.setCurrentSystemDateTime(ZonedDateTime.now());
-
-        return response;
+    public Integer getUnApprovedCount() {
+        return unApprovedCount;
     }
+
+    public void setUnApprovedCount(Integer unApprovedCount) {
+        this.unApprovedCount = unApprovedCount;
+    }
+
+    public Integer getUnsettledCount() {
+        return unsettledCount;
+    }
+
+    public void setUnsettledCount(Integer unsettledCount) {
+        this.unsettledCount = unsettledCount;
+    }
+
+    public ZonedDateTime getCurrentSystemDateTime() {
+        return currentSystemDateTime;
+    }
+
+    public void setCurrentSystemDateTime(ZonedDateTime currentSystemDateTime) {
+        this.currentSystemDateTime = currentSystemDateTime;
+    }
+}
