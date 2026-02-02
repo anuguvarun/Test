@@ -1,9 +1,8 @@
----
+String formattedDate =
+            LocalDateTime.now(ZoneOffset.UTC)
+                    .format(RepositoryHelperConstants.dateTimeFormatter);
 
-public String getStatusCode() {
-    return this.statusCode;
-}
+    response.setCurrentSystemDateTime(formattedDate);
 
-public String getStatus() {
-    return this.status;
+    return response;
 }
