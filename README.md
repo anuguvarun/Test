@@ -1,25 +1,19 @@
-updateCounts(summary: TradeOrderSummaryResponse): void {
+lgetTradesSummary(query?: { fromDate?: string; endDate?: string })
+  : Observable<TradeOrderSummaryResponse> {
 
-  this.tabs = this.tabs.map(tab => {
+  const endpoint = `${this.envService.map.baseUrl}/admin/tradeOrder/summary`;
 
-    switch (tab.id) {
+  let params = new HttpParams();
 
-      case 'approvals-needs-action':
-        return {
-          ...tab,
-          title: `Needs action (${summary.unApprovedCount ?? 0})`
-        };
+  if (query?.fromDate) {
+    params = params.set('fromDate', query.fromDate);
+  }
 
-      case 'approvals-order-flow-management':
-        return {
-          ...tab,
-          title: `Order flow management (${summary.unsettledCount ?? 0})`
-        };
+  if (query?.endDate) {
+    params = params.set('endDate', query.endDate);
+  }
 
-      default:
-        return tab;
-    }
-
-  });
-
+  return this.envService.map.production
+    ? this.httpClient.get<TradeOrderSummaryResponse>(endpoint, { params })
+    : of({});
 }
