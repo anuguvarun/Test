@@ -7,13 +7,13 @@ updateCounts(summary: TradeOrderSummaryResponse): void {
       case 'approvals-needs-action':
         return {
           ...tab,
-          count: summary.unApprovedCount ?? 0
+          title: `Needs action (${summary.unApprovedCount ?? 0})`
         };
 
       case 'approvals-order-flow-management':
         return {
           ...tab,
-          count: summary.unsettledCount ?? 0
+          title: `Order flow management (${summary.unsettledCount ?? 0})`
         };
 
       default:
@@ -21,4 +21,5 @@ updateCounts(summary: TradeOrderSummaryResponse): void {
     }
 
   });
+
 }
