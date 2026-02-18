@@ -1,6 +1,2 @@
-In container 
-
-this.tradeAdminService.getTradesSummary({
-  fromDate: this.fromDate,
-  endDate: this.endDate
-}).subscribe(...)
+Last updated:
+      {{ lastUpdated | date:'MM/dd/yyyy @ h:mm a' }} ET
